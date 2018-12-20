@@ -1,3 +1,15 @@
+
+/////////////////////////////////////////////////////////////////
+// Constants Define
+/////////////////////////////////////////////////////////////////
+
+`define SPRITE_LEN 16
+`define TRANSPARENT 12'hCBE
+
+/////////////////////////////////////////////////////////////////
+// Module Name: top
+/////////////////////////////////////////////////////////////////
+
 module top(
    input clk,
    input rst,
@@ -16,21 +28,34 @@ module top(
     wire valid;
     wire [9:0] h_cnt; //640
     wire [9:0] v_cnt;  //480
+	
+	
+	wire pic_en;
+	wire [9:0] pic_row, pic_col;
+	
+	assign {vgaRed, vgaGreen, vgaBlue} = (valid==1'b0)? 12'h0 :
+									 (pic_en == 1'b1)? (pixel == `TRANSPARENT)? 12'hFFF : pixel :
+									 12'hFFF;
+	
+	wire [9:0] player_r, player_c;
+	
+	assign player_r = 300;
+	assign player_c = 300;
+	assign pic_en = (player_r <= v_cnt && v_cnt <= player_r+`SPRITE_LEN && player_c <= h_cnt && h_cnt <= player_c+`SPRITE_LEN)? 1'b1 : 1'b0;
+	assign pic_row = v_cnt - player_r;
+	assign pic_col = h_cnt - player_c;
 
-  assign {vgaRed, vgaGreen, vgaBlue} = (valid==1'b1) ? pixel:12'h0;
-
-     clock_divisor clk_wiz_0_inst(
+    clock_divisor clk_wiz_0_inst(
       .clk(clk),
       .clk1(clk_25MHz),
       .clk22(clk_22)
     );
 
     mem_addr_gen mem_addr_gen_inst(
-    .clk(clk_22),
-    .rst(rst),
-    .h_cnt(h_cnt),
-    .v_cnt(v_cnt),
-    .pixel_addr(pixel_addr)
+		.en(pic_en),
+		.row(pic_row),
+		.col(pic_col),
+		.pixel_addr(pixel_addr)
     );
      
  
@@ -52,6 +77,22 @@ module top(
       .v_cnt(v_cnt)
     );
       
+endmodule
+
+
+/////////////////////////////////////////////////////////////////
+// Module Name: mem_addr_gen
+/////////////////////////////////////////////////////////////////
+
+module mem_addr_gen(
+	input en,
+	input [9:0] row,
+	input [9:0] col,
+	output [16:0] pixel_addr
+	);
+
+	assign pixel_addr = (en == 1'b1)? row * `SPRITE_LEN + col : 0;
+
 endmodule
 
 /////////////////////////////////////////////////////////////////
@@ -125,32 +166,6 @@ module vga_controller (
     assign h_cnt = (pixel_cnt < HD) ? pixel_cnt : 10'd0;
     assign v_cnt = (line_cnt < VD) ? line_cnt : 10'd0;
 
-endmodule
-
-/////////////////////////////////////////////////////////////////
-// Module Name: vga
-/////////////////////////////////////////////////////////////////
-module mem_addr_gen(
-   input clk,
-   input rst,
-   input [9:0] h_cnt,
-   input [9:0] v_cnt,
-   output [16:0] pixel_addr
-   );
-    
-   reg [7:0] position;
-  
-   assign pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1)+ position*320 )% 76800;  //640*480 --> 320*240 
-
-   always @ (posedge clk or posedge rst) begin
-      if(rst)
-          position <= 0;
-       else if(position < 239)
-           position <= position + 1;
-       else
-           position <= 0;
-   end
-    
 endmodule
 
 /////////////////////////////////////////////////////////////////
