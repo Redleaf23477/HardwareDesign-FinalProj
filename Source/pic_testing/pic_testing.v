@@ -1,6 +1,28 @@
+
+/////////////////////////////////////////////////////////////////
+// Constants Define
+/////////////////////////////////////////////////////////////////
+
+`define SPRITE_LEN 32
+`define SPRITE_SIZE 16
+`define SPRITE_LOG_LEN 5
+`define SPRITE_WALK_DELAY 5
+`define SPRITE_MOVE_CNT 11    // SPRITE_LOG_LEN + SPRITE_WALK_DELAY + 1
+`define TRANSPARENT 12'hCBE
+
+`define MOVE_STOP  3'd0
+`define MOVE_DOWN  3'd1
+`define MOVE_UP    3'd2
+
+/////////////////////////////////////////////////////////////////
+// Module Name: top
+/////////////////////////////////////////////////////////////////
+
 module top(
    input clk,
    input rst,
+   input BTNU,
+   input BTND,
    output [3:0] vgaRed,
    output [3:0] vgaGreen,
    output [3:0] vgaBlue,
@@ -12,34 +34,182 @@ module top(
     wire clk_25MHz;
     wire clk_22;
     wire [16:0] pixel_addr;
-    wire [11:0] pixel;
+    reg [11:0] pixel;
     wire valid;
-    wire [9:0] h_cnt; //640
-    wire [9:0] v_cnt;  //480
+	wire [9:0] h_cnt; //640
+	wire [9:0] v_cnt; //480
+	wire [9:0] hc;    //320
+	wire [9:0] vc;    //240
+	
+	wire clk_13;
+	wire up_pressed, down_pressed;
+	clock_divider #(13) clkdiv13(.clk(clk), .clkdiv(clk_13));
+	debounce up_deb(.pb_debounced(up_pressed), .pb(BTNU), .clk(clk_13));
+	debounce down_deb(.pb_debounced(down_pressed), .pb(BTND), .clk(clk_13));
+	
+	// me testing
+	wire pic_en;
+	wire [9:0] pic_row, pic_col;
+	reg [9:0] player_r, player_c, nxt_player_r, nxt_player_c;
+	reg [2:0] move_stat, nxt_move_stat;
+	reg [`SPRITE_LOG_LEN+`SPRITE_WALK_DELAY:0] move_cnt, nxt_move_cnt;
+	
+	// dealing with memory
+	assign pic_en = (player_r <= v_cnt && v_cnt <= player_r+`SPRITE_LEN && player_c <= h_cnt && h_cnt <= player_c+`SPRITE_LEN)? 1'b1 : 1'b0;
+	assign pic_row = (v_cnt - player_r)>>1;
+	assign pic_col = (h_cnt - player_c)>>1;
+	
+	// vga display
+	reg [11:0] color;
+	assign {vgaRed, vgaGreen, vgaBlue} = color;
+	always@(*)begin
+		if(valid == 1'b0) color = 12'h0;
+		else if(pic_en == 1'b0) color = 12'hFFF;
+		else if(pixel == `TRANSPARENT) color = 12'hFFF;
+		else color = pixel;
+	end
+	
+	// player position
+	always@(posedge clk_13, posedge rst) begin
+		if(rst == 1'b1) begin
+			player_r <= 300;
+			player_c <= 300;
+		end else begin
+			player_r <= nxt_player_r;
+			player_c <= nxt_player_c;
+		end
+	end
+	always@(*) begin
+		case(move_stat)
+		`MOVE_STOP: begin
+			nxt_player_r = player_r;
+			nxt_player_c = player_c;
+		end
+		`MOVE_UP: begin
+			if(move_cnt[`SPRITE_WALK_DELAY:0] == 0) begin
+				nxt_player_r = player_r-1;
+				nxt_player_c = player_c;
+			end else begin
+				nxt_player_r = player_r;
+				nxt_player_c = player_c;
+			end
+		end
+		`MOVE_DOWN: begin
+			if(move_cnt[`SPRITE_WALK_DELAY:0] == 0) begin
+				nxt_player_r = player_r+1;
+				nxt_player_c = player_c;
+			end else begin
+				nxt_player_r = player_r;
+				nxt_player_c = player_c;
+			end
+		end
+		default: begin
+			nxt_player_r = player_r;
+			nxt_player_c = player_c;
+		end
+		endcase
+	end
+	
+	// player moving state
+	always@(posedge clk_13, posedge rst) begin
+		if(rst == 1'b1) begin
+			move_stat <= `MOVE_STOP;
+			move_cnt <= 0;
+		end else begin
+			move_stat <= nxt_move_stat;
+			move_cnt <= nxt_move_cnt;
+		end
+	end
+	always@(*) begin
+		nxt_move_stat = move_stat;
+		nxt_move_cnt = move_cnt;
+		case(move_stat)
+		`MOVE_STOP: begin
+			if(up_pressed == 1'b1) begin
+				nxt_move_stat = `MOVE_UP;
+				nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+			end else if(down_pressed == 1'b1) begin
+				nxt_move_stat = `MOVE_DOWN;
+				nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+			end
+		end
+		`MOVE_UP: begin
+			if(move_cnt == 0) begin
+			 	nxt_move_stat = `MOVE_STOP;
+			end else begin
+				nxt_move_cnt = move_cnt-1;
+			end
+		end
+		`MOVE_DOWN: begin
+			if(move_cnt == 0) begin
+			 	nxt_move_stat = `MOVE_STOP;
+			end else begin
+				nxt_move_cnt = move_cnt-1;
+			end
+		end
+		default: begin
+			nxt_move_stat = `MOVE_STOP;
+			nxt_move_cnt = 0;
+		end
+		endcase
+	end
+	
 
-  assign {vgaRed, vgaGreen, vgaBlue} = (valid==1'b1) ? pixel:12'h0;
-
-     clock_divisor clk_wiz_0_inst(
+    clock_divisor clk_wiz_0_inst(
       .clk(clk),
       .clk1(clk_25MHz),
       .clk22(clk_22)
     );
 
     mem_addr_gen mem_addr_gen_inst(
-    .clk(clk_22),
-    .rst(rst),
-    .h_cnt(h_cnt),
-    .v_cnt(v_cnt),
-    .pixel_addr(pixel_addr)
+		.en(pic_en),
+		.row(pic_row),
+		.col(pic_col),
+		.pixel_addr(pixel_addr)
     );
-     
  
-    blk_mem_gen_0 blk_mem_gen_0_inst(
+	// generating pixel of different picture
+	wire [11:0] pixel_front, pixel_up0, pixel_up1;
+	always@(*)begin
+		case(move_stat)
+		`MOVE_STOP: begin
+			pixel = pixel_front;
+		end
+		`MOVE_UP: begin
+			if(move_cnt[9:0] < 512) begin
+				pixel = pixel_up0;
+			end else begin
+				pixel = pixel_up1;
+			end
+		end
+		`MOVE_DOWN: begin
+			pixel = pixel_front;
+		end
+		default: begin
+			pixel = pixel_front;
+		end
+		endcase
+	end
+    blk_mem_gen_0 blk_mem_gen_front(
       .clka(clk_25MHz),
       .wea(0),
       .addra(pixel_addr),
       .dina(data[11:0]),
-      .douta(pixel)
+      .douta(pixel_front)
+    ); 
+	blk_mem_gen_1 blk_mem_gen_up0(
+      .clka(clk_25MHz),
+      .wea(0),
+      .addra(pixel_addr),
+      .dina(data[11:0]),
+      .douta(pixel_up0)
+    ); 
+	blk_mem_gen_2 blk_mem_gen_up1(
+      .clka(clk_25MHz),
+      .wea(0),
+      .addra(pixel_addr),
+      .dina(data[11:0]),
+      .douta(pixel_up1)
     ); 
 
     vga_controller   vga_inst(
@@ -52,6 +222,22 @@ module top(
       .v_cnt(v_cnt)
     );
       
+endmodule
+
+
+/////////////////////////////////////////////////////////////////
+// Module Name: mem_addr_gen
+/////////////////////////////////////////////////////////////////
+
+module mem_addr_gen(
+	input en,
+	input [9:0] row,
+	input [9:0] col,
+	output [16:0] pixel_addr
+	);
+
+	assign pixel_addr = (en == 1'b1)? row * `SPRITE_SIZE + col : 0;
+
 endmodule
 
 /////////////////////////////////////////////////////////////////
@@ -128,29 +314,33 @@ module vga_controller (
 endmodule
 
 /////////////////////////////////////////////////////////////////
-// Module Name: vga
+// Module Name: button related
 /////////////////////////////////////////////////////////////////
-module mem_addr_gen(
-   input clk,
-   input rst,
-   input [9:0] h_cnt,
-   input [9:0] v_cnt,
-   output [16:0] pixel_addr
-   );
-    
-   reg [7:0] position;
-  
-   assign pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1)+ position*320 )% 76800;  //640*480 --> 320*240 
 
-   always @ (posedge clk or posedge rst) begin
-      if(rst)
-          position <= 0;
-       else if(position < 239)
-           position <= position + 1;
-       else
-           position <= 0;
-   end
-    
+module debounce(pb_debounced, pb, clk);
+	input pb, clk;
+	output pb_debounced;
+	
+	reg [4:0] tmp;
+	
+	always@(posedge clk) begin
+		tmp <= {tmp[3:0], pb};
+	end
+	
+	assign pb_debounced = (tmp == 5'b11111) ? 1'b1 : 1'b0;
+endmodule
+
+module one_pulse(pb_pulse, pb_debounced, clk);
+	input pb_debounced, clk;
+	output reg pb_pulse;
+	
+	reg pb_delayed;
+	
+	always@(posedge clk) begin
+		pb_pulse <= (pb_debounced == 1'b1 && pb_delayed == 1'b0)? 1'b1 : 1'b0;
+		pb_delayed <= pb_debounced;
+	end
+	
 endmodule
 
 /////////////////////////////////////////////////////////////////
@@ -171,4 +361,22 @@ end
 assign next_num = num + 1'b1;
 assign clk1 = num[1];
 assign clk22 = num[21];
+endmodule
+
+module clock_divider(clk, clkdiv);
+	input clk;
+	output clkdiv;
+
+	parameter n = 22;
+
+	reg [n-1:0] num;
+	wire [n-1:0] next_num;
+
+	always @(posedge clk) begin
+		num <= next_num;
+	end
+
+	assign next_num = num + 1'b1;
+	assign clkdiv = num[n-1];
+	
 endmodule
