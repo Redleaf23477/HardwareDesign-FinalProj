@@ -15,6 +15,8 @@
 `define MOVE_STOP  3'd0
 `define MOVE_DOWN  3'd1
 `define MOVE_UP    3'd2
+`define MOVE_LEFT  3'd3
+`define MOVE_RIGHT 3'd4
 
 `define TRANSPARENT 12'hCBE
 
@@ -28,6 +30,8 @@ module player(
 	input rst,
 	input up_pressed,
 	input down_pressed,
+	input left_pressed,
+	input right_pressed,
 	
 	input [9:0] h_cnt,                // from vga controller
 	input [9:0] v_cnt,
@@ -40,6 +44,7 @@ module player(
 );
 
 	reg [2:0] move_stat, nxt_move_stat;
+	reg [2:0] pressed, nxt_pressed;
 	reg [`SPRITE_LOG_LEN+`SPRITE_WALK_DELAY:0] move_cnt, nxt_move_cnt;
 	reg [9:0] player_r, player_c, nxt_player_r, nxt_player_c;    // player position on map
 	reg [9:0] player_v, player_h, nxt_player_v, nxt_player_h;    // player position on vga, v = 32*r, h = 23*c;
@@ -78,6 +83,24 @@ module player(
 				nxt_player_h = player_h;
 			end
 		end
+		`MOVE_LEFT: begin
+			if(move_cnt[`SPRITE_WALK_DELAY:0] == 0) begin
+				nxt_player_v = player_v;
+				nxt_player_h = player_h-1;
+			end else begin
+				nxt_player_v = player_v;
+				nxt_player_h = player_h;
+			end
+		end
+		`MOVE_RIGHT: begin
+			if(move_cnt[`SPRITE_WALK_DELAY:0] == 0) begin
+				nxt_player_v = player_v;
+				nxt_player_h = player_h+1;
+			end else begin
+				nxt_player_v = player_v;
+				nxt_player_h = player_h;
+			end
+		end
 		default: begin
 			nxt_player_v = player_v;
 			nxt_player_h = player_h;
@@ -91,16 +114,19 @@ module player(
 			player_r <= 10;
 			player_c <= 10;
 			move_stat <= `MOVE_STOP;
+			pressed <= `MOVE_STOP;
 			move_cnt <= 0;
 		end else begin
 			player_r <= nxt_player_r;
 			player_c <= nxt_player_c;
 			move_stat <= nxt_move_stat;
+			pressed <= nxt_pressed;
 			move_cnt <= nxt_move_cnt;
 		end
 	end
 	always@(*) begin
 		nxt_move_stat = move_stat;
+		nxt_pressed = pressed;
 		nxt_move_cnt = move_cnt;
 		dest_r = player_r;
 		dest_c = player_c;
@@ -109,20 +135,50 @@ module player(
 		case(move_stat)
 		`MOVE_STOP: begin
 			if(up_pressed == 1'b1) begin
+				nxt_pressed = `MOVE_UP;
 				dest_r = player_r - 1;
 				dest_c = player_c;
 				if(dest_type == `MAP_ROAD) begin
 					nxt_move_stat = `MOVE_UP;
 					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+					nxt_player_r = dest_r;
+					nxt_player_c = dest_c;
 				end else begin
 					nxt_move_stat = `MOVE_STOP;
 					nxt_move_cnt = 0;
 				end
 			end else if(down_pressed == 1'b1) begin
+				nxt_pressed = `MOVE_DOWN;
 				dest_r = player_r + 1;
 				dest_c = player_c;
 				if(dest_type == `MAP_ROAD) begin
 					nxt_move_stat = `MOVE_DOWN;
+					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+					nxt_player_r = dest_r;
+					nxt_player_c = dest_c;
+				end else begin
+					nxt_move_stat = `MOVE_STOP;
+					nxt_move_cnt = 0;
+				end
+			end else if(left_pressed == 1'b1) begin
+				nxt_pressed = `MOVE_LEFT;
+				dest_r = player_r;
+				dest_c = player_c - 1;
+				if(dest_type == `MAP_ROAD) begin
+					nxt_move_stat = `MOVE_LEFT;
+					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+					nxt_player_r = dest_r;
+					nxt_player_c = dest_c;
+				end else begin
+					nxt_move_stat = `MOVE_STOP;
+					nxt_move_cnt = 0;
+				end
+			end else if(right_pressed == 1'b1) begin
+				nxt_pressed = `MOVE_RIGHT;
+				dest_r = player_r;
+				dest_c = player_c + 1;
+				if(dest_type == `MAP_ROAD) begin
+					nxt_move_stat = `MOVE_RIGHT;
 					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
 					nxt_player_r = dest_r;
 					nxt_player_c = dest_c;
@@ -146,6 +202,20 @@ module player(
 				nxt_move_cnt = move_cnt-1;
 			end
 		end
+		`MOVE_LEFT: begin
+			if(move_cnt == 0) begin
+			 	nxt_move_stat = `MOVE_STOP;
+			end else begin
+				nxt_move_cnt = move_cnt-1;
+			end
+		end
+		`MOVE_RIGHT: begin
+			if(move_cnt == 0) begin
+			 	nxt_move_stat = `MOVE_STOP;
+			end else begin
+				nxt_move_cnt = move_cnt-1;
+			end
+		end
 		default: begin
 			nxt_move_stat = `MOVE_STOP;
 			nxt_move_cnt = 0;
@@ -157,28 +227,61 @@ module player(
 	wire [11:0] data;
 	wire [9:0]  mem_row, mem_col;
 	wire [16:0] pixel_addr_player;
-	wire [11:0] pixel_front, pixel_up0, pixel_up1;
+	wire [11:0] pixel_up0, pixel_up1, pixel_up2;
+	wire [11:0] pixel_down0, pixel_down1, pixel_down2;
+	wire [11:0] pixel_left0, pixel_left1, pixel_left2;
+	wire [11:0] pixel_right0, pixel_right1, pixel_right2;
 	wire player_display_en;         // whether (h_cnt, v_cnt) is inside player
+	
 	assign player_display_en = (player_v <= v_cnt && v_cnt <= player_v+`SPRITE_LEN && player_h <= h_cnt && h_cnt <= player_h+`SPRITE_LEN)? 1'b1 : 1'b0;
 	assign mem_row = (v_cnt - player_v)>>1;
 	assign mem_col = (h_cnt - player_h)>>1;
+	
 	always@(*)begin
 		case(move_stat)
 		`MOVE_STOP: begin
-			pixel_player = pixel_front;
+			if(pressed == `MOVE_UP) begin
+				pixel_player = pixel_up0;
+			end else if(pressed == `MOVE_DOWN) begin
+				pixel_player = pixel_down0;
+			end else if(pressed == `MOVE_LEFT) begin
+				pixel_player = pixel_left0;
+			end else if(pressed == `MOVE_RIGHT) begin
+				pixel_player = pixel_right0;
+			end else begin
+				pixel_player = pixel_up0;
+			end
 		end
 		`MOVE_UP: begin
 			if(move_cnt[9:0] < 512) begin
-				pixel_player = pixel_up0;
-			end else begin
 				pixel_player = pixel_up1;
+			end else begin
+				pixel_player = pixel_up2;
 			end
 		end
 		`MOVE_DOWN: begin
-			pixel_player = pixel_front;
+			if(move_cnt[9:0] < 512) begin
+				pixel_player = pixel_down1;
+			end else begin
+				pixel_player = pixel_down2;
+			end
+		end
+		`MOVE_LEFT: begin
+			if(move_cnt[9:0] < 512) begin
+				pixel_player = pixel_left1;
+			end else begin
+				pixel_player = pixel_left2;
+			end
+		end
+		`MOVE_RIGHT: begin
+			if(move_cnt[9:0] < 512) begin
+				pixel_player = pixel_right1;
+			end else begin
+				pixel_player = pixel_right2;
+			end
 		end
 		default: begin
-			pixel_player = pixel_front;
+			pixel_player = pixel_down0;
 		end
 		endcase
 	end
@@ -188,13 +291,6 @@ module player(
 		.col(mem_col),
 		.pixel_addr(pixel_addr_player)
 	);
-	blk_mem_gen_player_front blk_mem_gen_player_front_inst(
-		.clka(clk_25MHz),
-		.wea(0),
-		.addra(pixel_addr_player),
-		.dina(data[11:0]),
-		.douta(pixel_front)
-    ); 
 	blk_mem_gen_player_up0 blk_mem_gen_player_up0_inst(
 		.clka(clk_25MHz),
 		.wea(0),
@@ -208,6 +304,76 @@ module player(
 		.addra(pixel_addr_player),
 		.dina(data[11:0]),
 		.douta(pixel_up1)
+    ); 
+	blk_mem_gen_player_up2 blk_mem_gen_player_up2_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_up2)
+    ); 
+	blk_mem_gen_player_down0 blk_mem_gen_player_down0_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_down0)
+    ); 
+	blk_mem_gen_player_down1 blk_mem_gen_player_down1_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_down1)
+    ); 
+	blk_mem_gen_player_down2 blk_mem_gen_player_down2_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_down2)
+    ); 
+	blk_mem_gen_player_left0 blk_mem_gen_player_left0_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_left0)
+    ); 
+	blk_mem_gen_player_left1 blk_mem_gen_player_left1_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_left1)
+    ); 
+	blk_mem_gen_player_left2 blk_mem_gen_player_left2_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_left2)
+    ); 
+	blk_mem_gen_player_right0 blk_mem_gen_player_right0_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_right0)
+    ); 
+	blk_mem_gen_player_right1 blk_mem_gen_player_right1_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_right1)
+    ); 
+	blk_mem_gen_player_right2 blk_mem_gen_player_right2_inst(
+		.clka(clk_25MHz),
+		.wea(0),
+		.addra(pixel_addr_player),
+		.dina(data[11:0]),
+		.douta(pixel_right2)
     ); 
 
 endmodule
