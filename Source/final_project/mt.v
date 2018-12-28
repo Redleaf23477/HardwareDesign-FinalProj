@@ -1,13 +1,33 @@
+
+/////////////////////////////////////////////////////////////////
+// Constants Define
+/////////////////////////////////////////////////////////////////
+
+`define MAP_WALL    3'b010
+`define MAP_ROAD0   3'b000
+`define MAP_ROAD1   3'b001
+`define MAP_STAIRS  3'b011
+
+/////////////////////////////////////////////////////////////////
+// Constants Define
+/////////////////////////////////////////////////////////////////
+
 module mt(input clk,
 		  input rst,
 		  input sw_map,
-		  input [5:0] gen_map_x,
-		  input [5:0] gen_map_y,
-		  output [2:0] gen_map_return);
+		  input [5:0] gen_map_x1,
+		  input [5:0] gen_map_y1,
+		  output [2:0] gen_map_return1,
+		  
+		  input [5:0] gen_map_x2,
+		  input [5:0] gen_map_y2,
+		  output [2:0] gen_map_return2
+);
 
 	reg [2:0] mt [0:9] [0:19];
 	
-	assign gen_map_return = mt[gen_map_y][gen_map_x];
+	assign gen_map_return1 = mt[gen_map_y1][gen_map_x1];
+	assign gen_map_return2 = mt[gen_map_y2][gen_map_x2];
 	
 	parameter S0_RESET = 3'b000;
 	parameter S1_MAP01 = 3'b001;

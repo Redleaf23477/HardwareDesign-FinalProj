@@ -9,8 +9,10 @@
 `define SPRITE_WALK_DELAY 5
 `define SPRITE_MOVE_CNT 11    // SPRITE_LOG_LEN + SPRITE_WALK_DELAY + 1
 
-`define MAP_WALL 3'b000
-`define MAP_ROAD 3'b001
+`define MAP_WALL    3'b010
+`define MAP_ROAD0   3'b000
+`define MAP_ROAD1   3'b001
+`define MAP_STAIRS  3'b011
 
 `define MOVE_STOP  3'd0
 `define MOVE_DOWN  3'd1
@@ -52,8 +54,8 @@ module player(
 	// player position on vga
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			player_v <= 10 * `SPRITE_SIZE;
-			player_h <= 10 * `SPRITE_SIZE;
+			player_v <= 3 * `SPRITE_LEN;
+			player_h <= 3 * `SPRITE_LEN;
 		end else begin
 			player_v <= nxt_player_v;
 			player_h <= nxt_player_h;
@@ -109,10 +111,13 @@ module player(
 	end
 	
 	// player moving state / position on map
+	wire dest_is_valid;
+	assign dest_is_valid = (dest_type == `MAP_ROAD0 || dest_type == `MAP_ROAD1 || dest_type == `MAP_STAIRS)? 1'b1 : 1'b0;
+	
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			player_r <= 10;
-			player_c <= 10;
+			player_r <= 3;
+			player_c <= 3;
 			move_stat <= `MOVE_STOP;
 			pressed <= `MOVE_STOP;
 			move_cnt <= 0;
@@ -138,7 +143,7 @@ module player(
 				nxt_pressed = `MOVE_UP;
 				dest_r = player_r - 1;
 				dest_c = player_c;
-				if(dest_type == `MAP_ROAD) begin
+				if(dest_is_valid == 1'b1) begin
 					nxt_move_stat = `MOVE_UP;
 					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
 					nxt_player_r = dest_r;
@@ -151,7 +156,7 @@ module player(
 				nxt_pressed = `MOVE_DOWN;
 				dest_r = player_r + 1;
 				dest_c = player_c;
-				if(dest_type == `MAP_ROAD) begin
+				if(dest_is_valid == 1'b1) begin
 					nxt_move_stat = `MOVE_DOWN;
 					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
 					nxt_player_r = dest_r;
@@ -164,7 +169,7 @@ module player(
 				nxt_pressed = `MOVE_LEFT;
 				dest_r = player_r;
 				dest_c = player_c - 1;
-				if(dest_type == `MAP_ROAD) begin
+				if(dest_is_valid == 1'b1) begin
 					nxt_move_stat = `MOVE_LEFT;
 					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
 					nxt_player_r = dest_r;
@@ -177,7 +182,7 @@ module player(
 				nxt_pressed = `MOVE_RIGHT;
 				dest_r = player_r;
 				dest_c = player_c + 1;
-				if(dest_type == `MAP_ROAD) begin
+				if(dest_is_valid == 1'b1) begin
 					nxt_move_stat = `MOVE_RIGHT;
 					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
 					nxt_player_r = dest_r;
@@ -249,7 +254,7 @@ module player(
 			end else if(pressed == `MOVE_RIGHT) begin
 				pixel_player = pixel_right0;
 			end else begin
-				pixel_player = pixel_up0;
+				pixel_player = pixel_down0;
 			end
 		end
 		`MOVE_UP: begin

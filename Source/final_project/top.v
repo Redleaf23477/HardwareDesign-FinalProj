@@ -3,8 +3,6 @@
 // Constants Define
 /////////////////////////////////////////////////////////////////
 
-`define MAP_ROAD 3'b001
-
 module top(
    input clk,
    input rst,                    // btnc : reset button
@@ -71,8 +69,6 @@ module top(
 	wire [2:0] player_next_step_type;
 	wire [9:0] player_next_step_r, player_next_step_c;
 	
-	assign player_next_step_type = `MAP_ROAD;
-	
 	player player_inst(
 		.clk_13(clk_13),
 		.clk_25MHz(clk_25MHz),
@@ -100,9 +96,12 @@ module top(
 		.clk(clk_13),
 		.rst(rst),
 		.sw_map(sw_map),
-		.gen_map_x(gen_map_x),
-		.gen_map_y(gen_map_y),
-		.gen_map_return(gen_map_return)
+		.gen_map_x1(gen_map_x),
+		.gen_map_y1(gen_map_y),
+		.gen_map_return1(gen_map_return),
+		.gen_map_x2(player_next_step_c),
+		.gen_map_y2(player_next_step_r),
+		.gen_map_return2(player_next_step_type)
 	);
 	
 	blk_mem_gen_map blk_mem_gen_map_inst(
