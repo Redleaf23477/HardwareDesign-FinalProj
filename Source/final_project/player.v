@@ -42,13 +42,16 @@ module player(
 	output reg [9:0] dest_r,          // next step r position
 	output reg [9:0] dest_c,          // next step c position
 	
+	output reg [9:0] player_r,        // position of player on map
+	output reg [9:0] player_c,
+	
 	output reg [11:0] pixel_player    // rgb pixel of player
 );
 
 	reg [2:0] move_stat, nxt_move_stat;
 	reg [2:0] pressed, nxt_pressed;
 	reg [`SPRITE_LOG_LEN+`SPRITE_WALK_DELAY:0] move_cnt, nxt_move_cnt;
-	reg [9:0] player_r, player_c, nxt_player_r, nxt_player_c;    // player position on map
+	reg [9:0] nxt_player_r, nxt_player_c;                        // player position on map
 	reg [9:0] player_v, player_h, nxt_player_v, nxt_player_h;    // player position on vga, v = 32*r, h = 23*c;
 
 	// player position on vga
@@ -289,6 +292,7 @@ module player(
 			pixel_player = pixel_down0;
 		end
 		endcase
+		pixel_player = (player_display_en == 1'b1)? pixel_player : `TRANSPARENT;
 	end
 	mem_addr_gen_player mem_addr_gen_player_inst(
 		.en(player_display_en),
@@ -394,6 +398,6 @@ module mem_addr_gen_player(
 	output [16:0] pixel_addr
 );
 
-	assign pixel_addr = (en == 1'b1)? row * `SPRITE_SIZE + col : `TRANSPARENT;
+	assign pixel_addr = (en == 1'b1)? row * `SPRITE_SIZE + col : `TRANSPARENT;     //TODO
 
 endmodule

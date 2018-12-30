@@ -1,6 +1,6 @@
 
 /////////////////////////////////////////////////////////////////
-// Constants Define
+// Top Module
 /////////////////////////////////////////////////////////////////
 
 module top(
@@ -36,6 +36,7 @@ module top(
 	wire [9:0] v_cnt; //480
 	wire [11:0] pixel_player;    // pixel of player
 	wire [11:0] pixel_map;       // pixel of map
+	wire [11:0] pixel_arrow;     // pixel of shortest path direction to player
 	wire [11:0] pixel;           // final pixel to display
 	
 	assign {vgaRed, vgaGreen, vgaBlue} = pixel;
@@ -53,6 +54,7 @@ module top(
 	vga_displayer vga_displayer_inst(
 		.vga_valid(vga_valid),
 		.pixel_player(pixel_player),
+		.pixel_arrow(pixel_arrow),
 		.pixel_map(pixel_map),
 		.pixel(pixel)
 	);
@@ -66,6 +68,7 @@ module top(
 	debounce right_deb(.pb_debounced(right_pressed), .pb(BTNR), .clk(clk_13));
 	
 	// player
+	wire [9:0] player_r, player_c;
 	wire [2:0] player_next_step_type;
 	wire [9:0] player_next_step_r, player_next_step_c;
 	
@@ -82,7 +85,40 @@ module top(
 		.dest_type(player_next_step_type),
 		.dest_r(player_next_step_r),
 		.dest_c(player_next_step_c),
+		.player_r(player_r),
+		.player_c(player_c),
 		.pixel_player(pixel_player)
+	);
+	
+	// shortest path to player
+	
+	wire [9:0] query_r, query_c;
+	wire [2:0] map_state;
+	wire [2:0] shortest_path_dir;
+	wire [9:0] shortest_path_dist;
+	
+	assign map_state = 0; // MAP01 = 3'd0
+	
+	bellman_ford_shortest_path bfsp (
+		.clk(clk),
+		.rst(rst),
+		.player_r(player_r),
+		.player_c(player_c),
+		.map_stat(map_state),
+		.query_r(query_r),
+		.query_c(query_c),
+		.sp_dir(shortest_path_dir),
+		.sp_dist(shortest_path_dist)
+	);
+	
+	shortest_path_displayer(
+		.clk_25MHz(clk_25MHz),
+		.h_cnt(h_cnt),
+		.v_cnt(v_cnt),
+		.pixel_arrow(pixel_arrow),
+		.query_r(query_r),
+		.query_c(query_c),
+		.sp_dir(shortest_path_dir)
 	);
 	
 	// map
