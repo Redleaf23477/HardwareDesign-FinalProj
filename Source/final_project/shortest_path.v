@@ -35,17 +35,27 @@ module bellman_ford_shortest_path(
 	
 	input [2:0] map_stat,              // current map
 	
-	input [9:0] query_r,
-	input [9:0] query_c,
-	output [2:0] sp_dir,               // shortest path backtrack on (query_r, query_c)
-	output [9:0] sp_dist               // shortest path distance on (query_r, query_c)
+	input [9:0] query_r0,
+	input [9:0] query_c0,
+	output [2:0] sp_dir0,               // shortest path backtrack on (query_r0, query_c0)
+	output [9:0] sp_dist0,              // shortest path distance on (query_r0, query_c0)
+	
+	input [9:0] query_r1,
+	input [9:0] query_c1,
+	output [2:0] sp_dir1,
+	output [9:0] sp_dist1
 );
 
 	reg [2:0] backtrack [0:9][0:19], nxt_backtrack[0:9][0:19];           // shortest path backtrack
 	reg [9:0] shortest_dist [0:9][0:19], nxt_shortest_dist[0:9][0:19];   // shortest path distance
 
-	assign sp_dir = backtrack[query_r][query_c];
-	assign sp_dist = shortest_dist[query_r][query_c];
+	// 0th query
+	assign sp_dir0 = backtrack[query_r0][query_c0];
+	assign sp_dist0 = shortest_dist[query_r0][query_c0];
+	
+	// 1st query
+	assign sp_dir1 = backtrack[query_r1][query_c1];
+	assign sp_dist1 = shortest_dist[query_r1][query_c1];
 	
 	reg [9:0] prv_player_r, prv_player_c;
 	reg [2:0] stat, nxt_stat;

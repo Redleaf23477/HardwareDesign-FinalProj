@@ -11,8 +11,8 @@ create_clock -period 10.000 -name sys_clk_pin -waveform {0.000 5.000} -add [get_
 ## Switches
 set_property PACKAGE_PIN V17 [get_ports {sw_map}]
 set_property IOSTANDARD LVCMOS33 [get_ports {sw_map}]
-#set_property PACKAGE_PIN V16 [get_ports {sw[1]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {sw[1]}]
+set_property PACKAGE_PIN V16 [get_ports {sw_sp_display}]
+set_property IOSTANDARD LVCMOS33 [get_ports {sw_sp_display}]
 #set_property PACKAGE_PIN W16 [get_ports {sw[2]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {sw[2]}]
 #set_property PACKAGE_PIN W17 [get_ports {sw[3]}]
