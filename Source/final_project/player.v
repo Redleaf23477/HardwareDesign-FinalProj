@@ -3,22 +3,33 @@
 // Constants Define
 /////////////////////////////////////////////////////////////////
 
+// sprite related
+
 `define SPRITE_LEN 32
 `define SPRITE_SIZE 16
 `define SPRITE_LOG_LEN 5
 `define SPRITE_WALK_DELAY 5
 `define SPRITE_MOVE_CNT 11    // SPRITE_LOG_LEN + SPRITE_WALK_DELAY + 1
 
+// map constants
+
 `define MAP_WALL    3'b010
 `define MAP_ROAD0   3'b000
 `define MAP_ROAD1   3'b001
 `define MAP_STAIRS  3'b011
+
+`define MAP01_START_R 3
+`define MAP01_START_C 3
+
+// move state
 
 `define MOVE_STOP  3'd0
 `define MOVE_DOWN  3'd1
 `define MOVE_UP    3'd2
 `define MOVE_LEFT  3'd3
 `define MOVE_RIGHT 3'd4
+
+// color
 
 `define TRANSPARENT 12'hCBE
 
@@ -42,20 +53,23 @@ module player(
 	output reg [9:0] dest_r,          // next step r position
 	output reg [9:0] dest_c,          // next step c position
 	
+	output reg [9:0] player_r,        // position of player on map
+	output reg [9:0] player_c,
+	
 	output reg [11:0] pixel_player    // rgb pixel of player
 );
 
 	reg [2:0] move_stat, nxt_move_stat;
 	reg [2:0] pressed, nxt_pressed;
 	reg [`SPRITE_LOG_LEN+`SPRITE_WALK_DELAY:0] move_cnt, nxt_move_cnt;
-	reg [9:0] player_r, player_c, nxt_player_r, nxt_player_c;    // player position on map
+	reg [9:0] nxt_player_r, nxt_player_c;                        // player position on map
 	reg [9:0] player_v, player_h, nxt_player_v, nxt_player_h;    // player position on vga, v = 32*r, h = 23*c;
 
 	// player position on vga
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			player_v <= 3 * `SPRITE_LEN;
-			player_h <= 3 * `SPRITE_LEN;
+			player_v <= `MAP01_START_R * `SPRITE_LEN;
+			player_h <= `MAP01_START_C * `SPRITE_LEN;
 		end else begin
 			player_v <= nxt_player_v;
 			player_h <= nxt_player_h;
@@ -116,8 +130,8 @@ module player(
 	
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			player_r <= 3;
-			player_c <= 3;
+			player_r <= `MAP01_START_R;
+			player_c <= `MAP01_START_C;
 			move_stat <= `MOVE_STOP;
 			pressed <= `MOVE_STOP;
 			move_cnt <= 0;
@@ -289,6 +303,7 @@ module player(
 			pixel_player = pixel_down0;
 		end
 		endcase
+		pixel_player = (player_display_en == 1'b1)? pixel_player : `TRANSPARENT;
 	end
 	mem_addr_gen_player mem_addr_gen_player_inst(
 		.en(player_display_en),
@@ -394,6 +409,6 @@ module mem_addr_gen_player(
 	output [16:0] pixel_addr
 );
 
-	assign pixel_addr = (en == 1'b1)? row * `SPRITE_SIZE + col : `TRANSPARENT;
+	assign pixel_addr = (en == 1'b1)? row * `SPRITE_SIZE + col : `TRANSPARENT;     //TODO
 
 endmodule

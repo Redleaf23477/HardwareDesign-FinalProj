@@ -1,6 +1,6 @@
 
 /////////////////////////////////////////////////////////////////
-// Constants Define
+// Top Module
 /////////////////////////////////////////////////////////////////
 
 module top(
@@ -10,6 +10,7 @@ module top(
    input BTND,                   // btnd : player go down
    input BTNL,
    input BTNR,
+   input sw_sp_display,
    input sw_map,
    output [3:0] vgaRed,
    output [3:0] vgaGreen,
@@ -36,6 +37,8 @@ module top(
 	wire [9:0] v_cnt; //480
 	wire [11:0] pixel_player;    // pixel of player
 	wire [11:0] pixel_map;       // pixel of map
+	wire [11:0] pixel_arrow;     // pixel of shortest path direction to player
+	wire [11:0] pixel_monster0;  // pixel of monster0
 	wire [11:0] pixel;           // final pixel to display
 	
 	assign {vgaRed, vgaGreen, vgaBlue} = pixel;
@@ -53,7 +56,10 @@ module top(
 	vga_displayer vga_displayer_inst(
 		.vga_valid(vga_valid),
 		.pixel_player(pixel_player),
+		.display_sp(sw_sp_display),
+		.pixel_arrow(pixel_arrow),
 		.pixel_map(pixel_map),
+		.pixel_monster0(pixel_monster0),
 		.pixel(pixel)
 	);
 	
@@ -66,6 +72,7 @@ module top(
 	debounce right_deb(.pb_debounced(right_pressed), .pb(BTNR), .clk(clk_13));
 	
 	// player
+	wire [9:0] player_r, player_c;
 	wire [2:0] player_next_step_type;
 	wire [9:0] player_next_step_r, player_next_step_c;
 	
@@ -82,7 +89,69 @@ module top(
 		.dest_type(player_next_step_type),
 		.dest_r(player_next_step_r),
 		.dest_c(player_next_step_c),
+		.player_r(player_r),
+		.player_c(player_c),
 		.pixel_player(pixel_player)
+	);
+	
+	// monster
+	
+	wire [9:0] monster0_r, monster0_c;
+	wire [2:0] dir_monster0_to_player;
+	wire [9:0] dist_monster0_to_player;
+	
+	monster0 monster0_inst(
+		.clk_13(clk_13),
+		.clk_25MHz(clk_25MHz),
+		.rst(rst),
+		.h_cnt(h_cnt),
+		.v_cnt(v_cnt),
+		.monster_r(monster0_r),
+		.monster_c(monster0_c),
+		.dir_to_player(dir_monster0_to_player),
+		.dist_to_player(dist_monster0_to_player),
+		.pixel_monster(pixel_monster0)
+	);
+	
+	// debug: display shortest path tree on map
+	
+	wire [9:0] sp_tree_r, sp_tree_c;
+	wire [2:0] sp_tree_dir;
+	wire [9:0] sp_tree_dist;
+	
+	shortest_path_displayer(
+		.clk_25MHz(clk_25MHz),
+		.h_cnt(h_cnt),
+		.v_cnt(v_cnt),
+		.pixel_arrow(pixel_arrow),
+		.query_r(sp_tree_r),
+		.query_c(sp_tree_c),
+		.sp_dir(sp_tree_dir)
+	);
+	
+	// shortest path to player
+	
+	
+	wire [2:0] map_state;
+	
+	assign map_state = 0; // MAP01 = 3'd0
+	
+	bellman_ford_shortest_path bfsp (
+		.clk(clk),
+		.rst(rst),
+		.player_r(player_r),
+		.player_c(player_c),
+		.map_stat(map_state),
+		// 0th query : display shortest path tree
+		.query_r0(sp_tree_r),
+		.query_c0(sp_tree_c),
+		.sp_dir0(sp_tree_dir),
+		.sp_dist0(sp_tree_dist),
+		// 1st query : monster0
+		.query_r1(monster0_r),
+		.query_c1(monster0_c),
+		.sp_dir1(dir_monster0_to_player),
+		.sp_dist1(dist_monster0_to_player)
 	);
 	
 	// map
