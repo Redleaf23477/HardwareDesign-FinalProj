@@ -151,12 +151,13 @@ void print_verilog()
 			else if(dir[r][c] == 'l') dirStr = "`MOVE_LEFT";
 			else dirStr = "`MOVE_RIGHT";
 			
-			fout << "backtrack[" << r << "][" << c << "] <= " << dirStr << ";" << endl;
+			fout << "nxt_backtrack[" << r << "][" << c << "] <= " << dirStr << ";" << endl;
 		}
 	}
 	fout << "end" << endl;
 	fout << "endtask" << endl;
-	
+
+/*	
 	// init_shortest_dist_map01
 	fout << "task init_shortest_dist_map01;" << endl;
 	fout << "begin" << endl;
@@ -170,7 +171,7 @@ void print_verilog()
 	}
 	fout << "end" << endl;
 	fout << "endtask" << endl;
-	
+
 	// relax_backtrack_map01
 	fout << "task relax_backtrack_map01;" << endl;
 	fout << "begin" << endl;
@@ -284,6 +285,7 @@ void print_verilog()
 	fout << "nxt_shortest_dist[player_r][player_c] <= 0;" << endl;
 	fout << "end" << endl;
 	fout << "endtask" << endl;
+*/
 }
 
 /*
@@ -301,11 +303,11 @@ void print_verilog()
 ********************
 
 
-
-// wtf??
+10 20 
+2 14
 ********************
 *-=-*=--*--==---==-*
-*-*=--****-****-****
+*-*=--****-***=-****
 ****--=--*-*=====--*
 *-=*=*-*--=*=***=*-*
 *-**--=*=*--=====***

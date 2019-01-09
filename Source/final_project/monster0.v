@@ -20,8 +20,10 @@
 `define MAP_ROAD1   3'b001
 `define MAP_STAIRS  3'b011
 
-`define MAP01_START_R 8
-`define MAP01_START_C 18
+`define MAP0_START_R 8
+`define MAP0_START_C 18
+
+`define MAP0   3'd0
 
 // move state
 
@@ -30,6 +32,8 @@
 `define MOVE_UP    3'd2
 `define MOVE_LEFT  3'd3
 `define MOVE_RIGHT 3'd4
+
+// hp
 
 `define HP_FULL_MONSTER0      3'd5
 `define DAMAGE_PLAYER_SKILL 3'd5
@@ -59,6 +63,7 @@ module monster0(
 	input [9:0] player_r,
 	input [9:0] player_c,
 	
+	input [2:0] map_idx,
 	input [2:0] dir_to_player,         // shortest path direction to player
 	input [9:0] dist_to_player,        // shortest path distance to player
 	
@@ -73,8 +78,8 @@ module monster0(
 	// monster position on vga
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			monster_v <= `MAP01_START_R * `SPRITE_LEN;
-			monster_h <= `MAP01_START_C * `SPRITE_LEN;
+			monster_v <= `MAP0_START_R * `SPRITE_LEN;
+			monster_h <= `MAP0_START_C * `SPRITE_LEN;
 		end else begin
 			monster_v <= nxt_monster_v;
 			monster_h <= nxt_monster_h;
@@ -133,8 +138,8 @@ module monster0(
 	
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			monster_r <= `MAP01_START_R;
-			monster_c <= `MAP01_START_C;
+			monster_r <= `MAP0_START_R;
+			monster_c <= `MAP0_START_C;
 			move_stat <= `MOVE_STOP;
 			move_cnt <= 0;
 		end else begin
@@ -228,7 +233,7 @@ module monster0(
 	wire [11:0] pixel_monster0;
 	wire monster_display_en;         // whether (h_cnt, v_cnt) is inside monster
 	
-	assign monster_display_en = (monster_v <= v_cnt && v_cnt <= monster_v+`SPRITE_LEN && monster_h <= h_cnt && h_cnt <= monster_h+`SPRITE_LEN)? 1'b1 : 1'b0;
+	assign monster_display_en = (map_idx == `MAP0 && monster_v <= v_cnt && v_cnt <= monster_v+`SPRITE_LEN && monster_h <= h_cnt && h_cnt <= monster_h+`SPRITE_LEN)? 1'b1 : 1'b0;
 	assign mem_row = (v_cnt - monster_v)>>1;
 	assign mem_col = (h_cnt - monster_h)>>1;
 	

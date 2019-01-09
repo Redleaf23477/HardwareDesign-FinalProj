@@ -110,6 +110,9 @@ module top(
 	
 	// characters : player, monster0
 	
+	// map state
+	wire [2:0] map_state;
+	
 	// player io
 	wire [9:0] player_r, player_c;
 	wire player_alive;
@@ -140,6 +143,7 @@ module top(
 		.player_r(player_r),
 		.player_c(player_c),
 		.player_alive(player_alive),
+		.map_idx(map_state),
 		.monster0_r(monster0_r),
 		.monster0_c(monster0_c),
 		.monster0_alive(monster0_alive),
@@ -171,6 +175,7 @@ module top(
 		.player_r(player_r),
 		.player_c(player_c),
 		.player_use_skill(player_use_skill),
+		.map_idx(map_state),
 		.dir_to_player(dir_monster0_to_player),
 		.dist_to_player(dist_monster0_to_player),
 		.pixel_monster(pixel_monster0)
@@ -193,10 +198,6 @@ module top(
 	);
 	
 	// shortest path to player
-	
-	wire [2:0] map_state;
-	
-	assign map_state = 0; // MAP01 = 3'd0
 	
 	bellman_ford_shortest_path bfsp (
 		.clk(clk),
@@ -227,6 +228,9 @@ module top(
 		.clk(clk_13),
 		.rst(rst),
 		.sw_map(sw_map),
+		.player_r(player_r),
+		.player_c(player_c),
+		.map_idx(map_state),
 		.gen_map_x1(gen_map_x),
 		.gen_map_y1(gen_map_y),
 		.gen_map_return1(gen_map_return),

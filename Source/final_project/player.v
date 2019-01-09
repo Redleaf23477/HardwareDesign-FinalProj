@@ -18,8 +18,10 @@
 `define MAP_ROAD1   3'b001
 `define MAP_STAIRS  3'b011
 
-`define MAP01_START_R 3
-`define MAP01_START_C 3
+`define MAP0_START_R 3
+`define MAP0_START_C 3
+
+`define MAP0  3'd0
 
 // move state
 
@@ -62,6 +64,8 @@ module player(
 	output reg [9:0] player_c,
 	output player_alive,
 	
+	input [2:0] map_idx,
+	
 	input [9:0] monster0_r,
 	input [9:0] monster0_c,
 	input monster0_alive,
@@ -78,8 +82,8 @@ module player(
 	// player position on vga
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			player_v <= `MAP01_START_R * `SPRITE_LEN;
-			player_h <= `MAP01_START_C * `SPRITE_LEN;
+			player_v <= `MAP0_START_R * `SPRITE_LEN;
+			player_h <= `MAP0_START_C * `SPRITE_LEN;
 		end else begin
 			player_v <= nxt_player_v;
 			player_h <= nxt_player_h;
@@ -140,8 +144,8 @@ module player(
 	
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			player_r <= `MAP01_START_R;
-			player_c <= `MAP01_START_C;
+			player_r <= `MAP0_START_R;
+			player_c <= `MAP0_START_C;
 			move_stat <= `MOVE_STOP;
 			pressed <= `MOVE_STOP;
 			move_cnt <= 0;
@@ -252,27 +256,21 @@ module player(
 		endcase
 	end
 	
-	// player hp
-	reg [4:0] hp, nxt_hp, damage_sum;
+	// player hp, maybe need faster clock?
+	reg [4:0] hp;
 	reg [19:0] prv_monster_pos;
+	wire touch_monster0;
+	
 	assign player_alive = (hp > 0)? 1'b1 : 1'b0;
+	assign touch_monster0 = (map_idx == `MAP0 && monster0_alive == 1'b1 && prv_monster_pos != {monster0_r, monster0_c} && {monster0_r, monster0_c} == {player_r, player_c})? 1'b1 : 1'b0;
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
 			hp <= `HP_FULL_PLAYER;
 			prv_monster_pos <= {monster0_r, monster0_c};
 		end else begin
-			hp <= nxt_hp;
+			hp <= nxt_hp(hp, touch_monster0);
 			prv_monster_pos <= {monster0_r, monster0_c};
 		end
-	end
-	always@(*) begin
-		damage_sum = 0;
-		if(hp > 0) begin
-			if(monster0_alive == 1'b1 && prv_monster_pos != {monster0_r, monster0_c} && {monster0_r, monster0_c} == {player_r, player_c}) begin
-				damage_sum = (damage_sum + `DAMAGE_MONSTER0 <= hp)? damage_sum + `DAMAGE_MONSTER0 : hp;
-			end
-		end
-		nxt_hp = hp - damage_sum;
 	end
 	
 	// player display
@@ -428,6 +426,16 @@ module player(
 		.dina(data[11:0]),
 		.douta(pixel_right2)
     ); 
+	
+	function [4:0] nxt_hp;
+		input [4:0] hp;
+		input touch_monster0;
+		reg [4:0] acc0;
+		begin
+			acc0 = (touch_monster0 == 1'b1)? 1 : 0;
+			nxt_hp = (hp > acc0)? hp - acc0 : 0;
+		end
+	endfunction
 
 endmodule
 
