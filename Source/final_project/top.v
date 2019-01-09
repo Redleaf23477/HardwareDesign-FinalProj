@@ -12,6 +12,7 @@ module top(
    input BTNR,
    input sw_sp_display,
    input sw_map,
+   inout PS2_CLK, PS2_DATA,
    output [3:0] vgaRed,
    output [3:0] vgaGreen,
    output [3:0] vgaBlue,
@@ -30,6 +31,26 @@ module top(
 		.clk13(clk_13),
 		.clk22(clk_22)
     );
+
+	//KeyboardDecoder
+	wire shift_down;
+	wire [511:0] key_down;
+	wire [8:0] last_change;
+	wire been_ready;
+	
+	KeyboardDecoder key_de (
+		.key_down(key_down),
+		.last_change(last_change),
+		.key_valid(been_ready),
+		.PS2_DATA(PS2_DATA),
+		.PS2_CLK(PS2_CLK),
+		.rst(rst),
+		.clk(clk)
+	);
+	
+	//Key Pressed
+	wire attack_special_pressed;	//pressed 1
+	assign attack_special_pressed = (been_ready && key_down[last_change] == 1'b1) & (last_change == 9'b0_0110_1001);
 	
 	// vga variables
 	wire vga_valid;
@@ -40,6 +61,8 @@ module top(
 	wire [11:0] pixel_arrow;     // pixel of shortest path direction to player
 	wire [11:0] pixel_monster0;  // pixel of monster0
 	wire [11:0] pixel;           // final pixel to display
+	
+	wire [11:0] pixel_attack;	// rgb pixel of attack
 	
 	assign {vgaRed, vgaGreen, vgaBlue} = pixel;
 	
@@ -60,6 +83,7 @@ module top(
 		.pixel_arrow(pixel_arrow),
 		.pixel_map(pixel_map),
 		.pixel_monster0(pixel_monster0),
+		.pixel_attack(pixel_attack),
 		.pixel(pixel)
 	);
 	
@@ -190,5 +214,16 @@ module top(
 	   .map(gen_map_return)
 	);
 
+	player_attack player_attack_inst(
+		.clk(clk),
+		.clk_25MHz(clk_25MHz),
+		.rst(rst),
+		.attack_special_pressed(attack_special_pressed),
+		.h_cnt(h_cnt),
+		.v_cnt(v_cnt),
+		.player_x(player_c),
+		.player_y(player_r),
+		.pixel_attack(pixel_attack)
+	);
 
 endmodule
