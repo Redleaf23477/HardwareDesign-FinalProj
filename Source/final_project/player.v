@@ -29,6 +29,11 @@
 `define MOVE_LEFT  3'd3
 `define MOVE_RIGHT 3'd4
 
+// hp
+
+`define HP_FULL_PLAYER  5
+`define DAMAGE_MONSTER0 1
+
 // color
 
 `define TRANSPARENT 12'hCBE
@@ -55,6 +60,11 @@ module player(
 	
 	output reg [9:0] player_r,        // position of player on map
 	output reg [9:0] player_c,
+	output player_alive,
+	
+	input [9:0] monster0_r,
+	input [9:0] monster0_c,
+	input monster0_alive,
 	
 	output reg [11:0] pixel_player    // rgb pixel of player
 );
@@ -242,6 +252,29 @@ module player(
 		endcase
 	end
 	
+	// player hp
+	reg [4:0] hp, nxt_hp, damage_sum;
+	reg [19:0] prv_monster_pos;
+	assign player_alive = (hp > 0)? 1'b1 : 1'b0;
+	always@(posedge clk_13, posedge rst) begin
+		if(rst == 1'b1) begin
+			hp <= `HP_FULL_PLAYER;
+			prv_monster_pos <= {monster0_r, monster0_c};
+		end else begin
+			hp <= nxt_hp;
+			prv_monster_pos <= {monster0_r, monster0_c};
+		end
+	end
+	always@(*) begin
+		damage_sum = 0;
+		if(hp > 0) begin
+			if(monster0_alive == 1'b1 && prv_monster_pos != {monster0_r, monster0_c} && {monster0_r, monster0_c} == {player_r, player_c}) begin
+				damage_sum = (damage_sum + `DAMAGE_MONSTER0 <= hp)? damage_sum + `DAMAGE_MONSTER0 : hp;
+			end
+		end
+		nxt_hp = hp - damage_sum;
+	end
+	
 	// player display
 	wire [11:0] data;
 	wire [9:0]  mem_row, mem_col;
@@ -303,7 +336,7 @@ module player(
 			pixel_player = pixel_down0;
 		end
 		endcase
-		pixel_player = (player_display_en == 1'b1)? pixel_player : `TRANSPARENT;
+		pixel_player = (player_alive == 1'b1 && player_display_en == 1'b1)? pixel_player : `TRANSPARENT;
 	end
 	mem_addr_gen_player mem_addr_gen_player_inst(
 		.en(player_display_en),
