@@ -6,7 +6,8 @@ module player_attack(input clk,
 					 input [9:0] v_cnt,
 					 input [9:0] player_x,	//player_c
 					 input [9:0] player_y,	//player_r
-					 output reg [11:0] pixel_attack	// rgb pixel of attack
+					 output reg [11:0] pixel_attack,	// rgb pixel of attack
+					 output attacking_special	//	player is attacking or not
 );
 	
 /////////////////////////////////////////////////////////////////
@@ -31,6 +32,8 @@ module player_attack(input clk,
 	parameter S1_NORM = 2'b01;
 	parameter S2_SPEC = 2'b10;
 	reg [1:0] state, next_state;
+	
+	assign attacking_special = (state == S2_SPEC) ? 1 : 0;
 	
 	reg [26:0] fake_count;
 	reg finished;
@@ -73,7 +76,7 @@ module player_attack(input clk,
 						pixel_attack_en <= 1'b1;
 					end else if ( sx == (player_x + 20 + 1) % 20 && sy == (player_y + 10 - 1) % 10 ) begin
 						pixel_addr <= (hc % 16      + 16 * (vc % 16));
-						pixel_attack_en <= 1'b1;
+						pixel_attack_en <= 1'b1;	
 					end else if ( sx == (player_x + 20 - 2) % 20 && sy == (player_y + 10 + 0) % 10 ) begin
 						pixel_addr <= (hc % 16      + 16 * (vc % 16));
 						pixel_attack_en <= 1'b1;

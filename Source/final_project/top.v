@@ -60,9 +60,8 @@ module top(
 	wire [11:0] pixel_map;       // pixel of map
 	wire [11:0] pixel_arrow;     // pixel of shortest path direction to player
 	wire [11:0] pixel_monster0;  // pixel of monster0
-	wire [11:0] pixel;           // final pixel to display
-	
 	wire [11:0] pixel_attack;	// rgb pixel of attack
+	wire [11:0] pixel;           // final pixel to display
 	
 	assign {vgaRed, vgaGreen, vgaBlue} = pixel;
 	
@@ -214,6 +213,7 @@ module top(
 	   .map(gen_map_return)
 	);
 
+	wire attacking_special;	//	player is attacking or not
 	player_attack player_attack_inst(
 		.clk(clk),
 		.clk_25MHz(clk_25MHz),
@@ -223,7 +223,8 @@ module top(
 		.v_cnt(v_cnt),
 		.player_x(player_c),
 		.player_y(player_r),
-		.pixel_attack(pixel_attack)
+		.pixel_attack(pixel_attack),
+		.attacking_special(attacking_special)
 	);
 
 endmodule
