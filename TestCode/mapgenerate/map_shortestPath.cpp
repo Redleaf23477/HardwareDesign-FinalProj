@@ -60,6 +60,7 @@ void process() // with bellman ford
 		{
 			dist[r][c] = INF;
 		}
+	dir[player_r][player_c] = 'r';
 	dist[player_r][player_c] = 0;
 	for(int turn = 0; turn < R*C; turn++)
 	{
@@ -85,7 +86,7 @@ void process() // with bellman ford
 	}
 }
 
-/*
+/* bfs shortest path
 void process()
 {
 	for(int r = 0; r < R; r++)
@@ -137,8 +138,8 @@ void print_verilog()
 {
 	ofstream fout("verilogCode.v");
 	
-	// init_backtrack_map01
-	fout << "task init_backtrack_map01;" << endl;
+	// init_backtrack_map
+	fout << "task init_backtrack_map0;" << endl;
 	fout << "begin" << endl;
 	for(int r = 0; r < R; r++)
 	{
@@ -151,28 +152,28 @@ void print_verilog()
 			else if(dir[r][c] == 'l') dirStr = "`MOVE_LEFT";
 			else dirStr = "`MOVE_RIGHT";
 			
-			fout << "backtrack[" << r << "][" << c << "] <= " << dirStr << ";" << endl;
+			fout << "nxt_backtrack[" << r << "][" << c << "] <= " << dirStr << ";" << endl;
 		}
 	}
 	fout << "end" << endl;
 	fout << "endtask" << endl;
 	
-	// init_shortest_dist_map01
-	fout << "task init_shortest_dist_map01;" << endl;
-	fout << "begin" << endl;
-	for(int r = 0; r < R; r++)
-	{
-		for(int c = 0; c < C; c++)
-		{
-			fout << "shortest_dist[" << r << "][" << c << "] <= ";
-			fout << dist[r][c] << ";" << endl;
-		}
-	}
-	fout << "end" << endl;
-	fout << "endtask" << endl;
-	
-	// relax_backtrack_map01
-	fout << "task relax_backtrack_map01;" << endl;
+//	// init_shortest_dist_map
+//	fout << "task init_shortest_dist_map0;" << endl;
+//	fout << "begin" << endl;
+//	for(int r = 0; r < R; r++)
+//	{
+//		for(int c = 0; c < C; c++)
+//		{
+//			fout << "shortest_dist[" << r << "][" << c << "] <= ";
+//			fout << dist[r][c] << ";" << endl;
+//		}
+//	}
+//	fout << "end" << endl;
+//	fout << "endtask" << endl;
+
+	// relax_backtrack
+	fout << "task relax_backtrack;" << endl;
 	fout << "begin" << endl;
 	for(int r = 0; r < R; r++)
 	{
@@ -186,10 +187,10 @@ void print_verilog()
 			}
 			fout << "nxt_backtrack[" << r << "][" << c << "] <= ";
 			fout << "relax_dir(";
-			fout << r-1 << "," << c << ",";
-			fout << r+1 << "," << c << ",";
-			fout << r << "," << c-1 << ",";
-			fout << r << "," << c+1 << ",";
+			fout << (r-1 < 0? r : r-1) << "," << c << ",";
+			fout << (r+1 == R? r : r+1) << "," << c << ",";
+			fout << r << "," << (c-1 < 0? c : c-1) << ",";
+			fout << r << "," << (c+1 == C? c : c+1) << ",";
 			fout << "shortest_dist[" << r << "][" << c << "],";
 			fout << "backtrack[" << r << "][" << c << "]";
 			fout << ");" << endl;
@@ -198,8 +199,8 @@ void print_verilog()
 	fout << "end" << endl;
 	fout << "endtask" << endl;
 	
-	// relax_shortest_dist_map01
-	fout << "task relax_shortest_dist_map01;" << endl;
+	// relax_shortest_dist
+	fout << "task relax_shortest_dist;" << endl;
 	fout << "begin" << endl;
 	for(int r = 0; r < R; r++)
 	{
@@ -213,11 +214,12 @@ void print_verilog()
 			}
 			fout << "nxt_shortest_dist[" << r << "][" << c << "] <= ";
 			fout << "relax_dist(";
-			fout << r-1 << "," << c << ",";
-			fout << r+1 << "," << c << ",";
-			fout << r << "," << c-1 << ",";
-			fout << r << "," << c+1 << ",";
-			fout << "shortest_dist[" << r << "][" << c << "]";
+			fout << (r-1 < 0? r : r-1) << "," << c << ",";
+			fout << (r+1 == R? r : r+1) << "," << c << ",";
+			fout << r << "," << (c-1 < 0? c : c-1) << ",";
+			fout << r << "," << (c+1 == C? c : c+1) << ",";
+			fout << "shortest_dist[" << r << "][" << c << "],";
+			fout << "backtrack[" << r << "][" << c << "]";
 			fout << ");" << endl;
 		}
 	}
@@ -284,33 +286,27 @@ void print_verilog()
 	fout << "nxt_shortest_dist[player_r][player_c] <= 0;" << endl;
 	fout << "end" << endl;
 	fout << "endtask" << endl;
+
 }
 
 /*
-10 20
+
+15 20
 3 3
 ********************
-*...***.**.........*
-*.*.***....***.***.*
-*.*....*.*******...*
-*.*.*.**.****....***
-*****.........**...*
-*.*....*.****.****.*
-*.*.**.*..**.....*.*
-*...**.**....***...*
+*---***=**---=---=-*
+*=*-***===-***.***-*
+*-*-=-=*=*******---*
+*=*=*-**-****====***
+*****---------**---*
+*-*-=-=*-****=****=*
+*-*-**-*==**--=--*-*
+*=--**-**-=-=***-==*
 ********************
+-===---=-===-===-***
+-=-=---=---=---=-***
+-=-=---=-===-===-***
+---=---=-=---=---***
+---=---=-===-===-***
 
-
-
-// wtf??
-********************
-*-=-*=--*--==---==-*
-*-*=--****-****-****
-****--=--*-*=====--*
-*-=*=*-*--=*=***=*-*
-*-**--=*=*--=====***
-*=---*-=-*-**-****-*
-*=****=*=--*---*--=*
-*--=*--*-*-=-*-=-*-*
-********************
 */

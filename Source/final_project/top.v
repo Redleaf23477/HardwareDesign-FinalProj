@@ -11,7 +11,7 @@ module top(
    input BTNL,
    input BTNR,
    input sw_sp_display,
-   input sw_map,
+   input sw_open_special_wall,
    output [3:0] vgaRed,
    output [3:0] vgaGreen,
    output [3:0] vgaBlue,
@@ -96,9 +96,13 @@ module top(
 	
 	// monster
 	
+	wire any_monster_alive;
+	wire monster0_alive;
 	wire [9:0] monster0_r, monster0_c;
 	wire [2:0] dir_monster0_to_player;
 	wire [9:0] dist_monster0_to_player;
+	
+	assign any_monster_alive = monster0_alive;
 	
 	monster0 monster0_inst(
 		.clk_13(clk_13),
@@ -108,6 +112,7 @@ module top(
 		.v_cnt(v_cnt),
 		.monster_r(monster0_r),
 		.monster_c(monster0_c),
+		.alive(monster0_alive),
 		.dir_to_player(dir_monster0_to_player),
 		.dist_to_player(dist_monster0_to_player),
 		.pixel_monster(pixel_monster0)
@@ -131,17 +136,11 @@ module top(
 	
 	// shortest path to player
 	
-	
-	wire [2:0] map_state;
-	
-	assign map_state = 0; // MAP01 = 3'd0
-	
 	bellman_ford_shortest_path bfsp (
 		.clk(clk),
 		.rst(rst),
 		.player_r(player_r),
 		.player_c(player_c),
-		.map_stat(map_state),
 		// 0th query : display shortest path tree
 		.query_r0(sp_tree_r),
 		.query_c0(sp_tree_c),
@@ -156,15 +155,18 @@ module top(
 	
 	// map
 	
+	wire open_special_wall;
 	wire [16:0] pixel_addr_map;
 	wire [5:0] gen_map_x, gen_map_y;
 	wire [2:0] gen_map_return;
 	wire [11:0] data;
 	
+	assign open_special_wall = (sw_open_special_wall == 1'b1) || (any_monster_alive == 1'b0);
+	
 	mt map_type(
 		.clk(clk_13),
 		.rst(rst),
-		.sw_map(sw_map),
+		.open_special_wall(open_special_wall),
 		.gen_map_x1(gen_map_x),
 		.gen_map_y1(gen_map_y),
 		.gen_map_return1(gen_map_return),

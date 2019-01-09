@@ -49,12 +49,15 @@ module monster0(
 	
 	output reg [9:0] monster_r,        // position of monster on map
 	output reg [9:0] monster_c,
+	output alive,
 	
 	input [2:0] dir_to_player,         // shortest path direction to player
 	input [9:0] dist_to_player,        // shortest path distance to player
 	
 	output reg [11:0] pixel_monster    // rgb pixel of monster
 );
+	
+	assign alive = 1'b1;
 
 	reg [2:0] move_stat, nxt_move_stat;
 	reg [`SPRITE_LOG_LEN+`SPRITE_WALK_DELAY:0] move_cnt, nxt_move_cnt;
