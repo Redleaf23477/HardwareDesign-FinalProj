@@ -398,6 +398,7 @@ module top(
 		.clk(clk),
 		.clk_25MHz(clk_25MHz),
 		.rst(rst),
+		.map_idx(map_state),
 		.h_cnt(h_cnt),
 		.v_cnt(v_cnt),
 		.player_x(player_c),
