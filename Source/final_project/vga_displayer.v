@@ -28,6 +28,8 @@ module vga_displayer(
 	input [11:0] pixel_monster0,
 	input [11:0] pixel_arrow,
 	input [11:0] pixel_map,
+	input [11:0] pixel_attack,
+	input [11:0] pixel_item,
 	output [11:0] pixel
 );
 
@@ -41,8 +43,10 @@ module vga_displayer(
 	reg [11:0] color;
 	always@(*) begin
 		if(vga_valid == 1'b0) color = `BLACK;
+		else if (pixel_attack != `TRANSPARENT) color = pixel_attack;
 		else if(pixel_player != `TRANSPARENT) color = pixel_player;
 		else if(pixel_monster0 != `TRANSPARENT) color = pixel_monster0;
+		else if (pixel_item != `TRANSPARENT) color = pixel_item;
 		else if(display_sp == 1'b1 && pixel_arrow != `TRANSPARENT) color = pixel_arrow;
 		else color = pixel_map;
 	end
