@@ -65,7 +65,8 @@ module top(
 	wire [11:0] pixel_map;       // pixel of map
 	wire [11:0] pixel_arrow;     // pixel of shortest path direction to player
 	wire [11:0] pixel_monster0;  // pixel of monster0
-	wire [11:0] pixel_attack;	// rgb pixel of attack
+	wire [11:0] pixel_attack;	//	pixel of attack
+	wire [11:0] pixel_item;		//	pixel of item
 	wire [11:0] pixel;           // final pixel to display
 	
 	assign {vgaRed, vgaGreen, vgaBlue} = pixel;
@@ -88,6 +89,7 @@ module top(
 		.pixel_map(pixel_map),
 		.pixel_monster0(pixel_monster0),
 		.pixel_attack(pixel_attack),
+		.pixel_item(pixel_item),
 		.pixel(pixel)
 	);
 	
@@ -249,5 +251,18 @@ module top(
 	   .sy(gen_map_y),
 	   .map(gen_map_return)
 	);
-
+	
+	wire item_all_picked;
+	item item_inst(
+		.clk(clk),
+		.clk_25MHz(clk_25MHz),
+		.rst(rst),
+		.h_cnt(h_cnt),
+		.v_cnt(v_cnt),
+		.player_x(player_c),
+		.player_y(player_r),
+		.pixel_item(pixel_item),
+		.item_all_picked(item_all_picked)
+	);
+  
 endmodule
