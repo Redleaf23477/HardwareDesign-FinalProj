@@ -44,7 +44,22 @@ module bellman_ford_shortest_path(
 	input [9:0] query_r1,
 	input [9:0] query_c1,
 	output [2:0] sp_dir1,
-	output [9:0] sp_dist1
+	output [9:0] sp_dist1,
+	
+	input [9:0] query_r2,
+	input [9:0] query_c2,
+	output [2:0] sp_dir2,
+	output [9:0] sp_dist2,
+	
+	input [9:0] query_r3,
+	input [9:0] query_c3,
+	output [2:0] sp_dir3,
+	output [9:0] sp_dist3,
+	
+	input [9:0] query_r4,
+	input [9:0] query_c4,
+	output [2:0] sp_dir4,
+	output [9:0] sp_dist4
 );
 
 	reg [2:0] backtrack [0:9][0:19], nxt_backtrack[0:9][0:19];           // shortest path backtrack
@@ -57,6 +72,18 @@ module bellman_ford_shortest_path(
 	// 1st query
 	assign sp_dir1 = backtrack[query_r1][query_c1];
 	assign sp_dist1 = shortest_dist[query_r1][query_c1];
+	
+	// 2st query
+	assign sp_dir2 = backtrack[query_r2][query_c2];
+	assign sp_dist2 = shortest_dist[query_r2][query_c2];
+	
+	// 3st query
+	assign sp_dir3 = backtrack[query_r3][query_c3];
+	assign sp_dist3 = shortest_dist[query_r3][query_c3];
+	
+	// 4st query
+	assign sp_dir4 = backtrack[query_r4][query_c4];
+	assign sp_dist4 = shortest_dist[query_r4][query_c4];
 	
 	reg [9:0] prv_player_r, prv_player_c;
 	reg [2:0] prv_map;
@@ -1776,13 +1803,13 @@ endtask
 			tmp = original_dist;
 			dir = original_dir;
 			tmp_u = (shortest_dist[ur][uc] < tmp-1)? shortest_dist[ur][uc]+1 : tmp;
-			dir_u = (shortest_dist[ur][uc] == tmp-1)? `MOVE_UP : dir;
+			dir_u = (shortest_dist[ur][uc] == tmp_u-1)? `MOVE_UP : dir;
 			tmp_d = (shortest_dist[dr][dc] < tmp_u-1)? shortest_dist[dr][dc]+1 : tmp_u;
-			dir_d = (shortest_dist[dr][dc] == tmp_u-1)? `MOVE_DOWN : dir_u;
+			dir_d = (shortest_dist[dr][dc] == tmp_d-1)? `MOVE_DOWN : dir_u;
 			tmp_l = (shortest_dist[lr][lc] < tmp_d-1)? shortest_dist[lr][lc]+1 : tmp_d;
-			dir_l = (shortest_dist[lr][lc] == tmp_d-1)? `MOVE_LEFT : dir_d;
+			dir_l = (shortest_dist[lr][lc] == tmp_l-1)? `MOVE_LEFT : dir_d;
 			tmp_r = (shortest_dist[rr][rc] < tmp_l-1)? shortest_dist[rr][rc]+1 : tmp_l;
-			dir_r = (shortest_dist[rr][rc] == tmp_l-1)? `MOVE_RIGHT : dir_l;
+			dir_r = (shortest_dist[rr][rc] == tmp_r-1)? `MOVE_RIGHT : dir_l;
 			relax_dir = (tmp_r == 1023)? `MOVE_STOP : dir_r;
 		end
 	endfunction
