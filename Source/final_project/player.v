@@ -5,7 +5,7 @@
 
 // sprite related
 
-`define SPRITE_LEN 32
+`define SPRITE_LEN 10'd32
 `define SPRITE_SIZE 16
 `define SPRITE_LOG_LEN 5
 `define SPRITE_WALK_DELAY 5
@@ -13,15 +13,17 @@
 
 // map constants
 
-`define MAP_WALL    3'b010
-`define MAP_ROAD0   3'b000
-`define MAP_ROAD1   3'b001
-`define MAP_STAIRS  3'b011
+`define MAP_WALL      3'b010
+`define MAP_ROAD0     3'b000
+`define MAP_ROAD1     3'b001
+`define MAP_FAKE_WALL 3'b100
+`define MAP_STAIRS    3'b011
 
 `define MAP0_START_R 3
 `define MAP0_START_C 3
 
 `define MAP0  3'd0
+`define MAP1  3'd1
 
 // move state
 
@@ -154,7 +156,10 @@ module player(
 	
 	// player moving state / position on map
 	wire dest_is_valid;
-	assign dest_is_valid = (dest_type == `MAP_ROAD0 || dest_type == `MAP_ROAD1 || dest_type == `MAP_STAIRS)? 1'b1 : 1'b0;
+	wire can_control_player;
+	
+	assign dest_is_valid = (dest_r >= 10 || dest_c >= 20 || dest_type == `MAP_ROAD0 || dest_type == `MAP_ROAD1 || dest_type == `MAP_STAIRS || dest_type == `MAP_FAKE_WALL)? 1'b1 : 1'b0;
+	assign can_control_player = (hp > 0 && (map_idx == `MAP0 || map_idx == `MAP1))? 1'b1 : 1'b0;
 	
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
@@ -181,10 +186,10 @@ module player(
 		nxt_player_c = player_c;
 		case(move_stat)
 		`MOVE_STOP: begin
-			if (hp > 0) begin				
+			if (can_control_player == 1'b1) begin				
 				if(up_pressed == 1'b1) begin
 					nxt_pressed = `MOVE_UP;
-					dest_r = player_r - 1;
+					dest_r = (player_r == 0)? 31 : player_r - 1;
 					dest_c = player_c;
 					if(dest_is_valid == 1'b1) begin
 						nxt_move_stat = `MOVE_UP;
@@ -195,7 +200,7 @@ module player(
 					end
 				end else if(down_pressed == 1'b1) begin
 					nxt_pressed = `MOVE_DOWN;
-					dest_r = player_r + 1;
+					dest_r = (player_r == 31)? 0 : player_r + 1;
 					dest_c = player_c;
 					if(dest_is_valid == 1'b1) begin
 						nxt_move_stat = `MOVE_DOWN;
@@ -207,7 +212,7 @@ module player(
 				end else if(left_pressed == 1'b1) begin
 					nxt_pressed = `MOVE_LEFT;
 					dest_r = player_r;
-					dest_c = player_c - 1;
+					dest_c = (player_c == 0)? 31 : player_c - 1;
 					if(dest_is_valid == 1'b1) begin
 						nxt_move_stat = `MOVE_LEFT;
 						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
@@ -218,7 +223,7 @@ module player(
 				end else if(right_pressed == 1'b1) begin
 					nxt_pressed = `MOVE_RIGHT;
 					dest_r = player_r;
-					dest_c = player_c + 1;
+					dest_c = (player_c == 31)? 0 : player_c + 1;
 					if(dest_is_valid == 1'b1) begin
 						nxt_move_stat = `MOVE_RIGHT;
 						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
@@ -232,7 +237,7 @@ module player(
 		`MOVE_UP: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
-				nxt_player_r = player_r-1;
+				nxt_player_r = (player_r == 0)? 31 : player_r-1;
 				nxt_player_c = player_c;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
@@ -241,7 +246,7 @@ module player(
 		`MOVE_DOWN: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
-				nxt_player_r = player_r+1;
+				nxt_player_r = (player_r == 31)? 0 : player_r+1;
 				nxt_player_c = player_c;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
@@ -251,7 +256,7 @@ module player(
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
 				nxt_player_r = player_r;
-				nxt_player_c = player_c-1;
+				nxt_player_c = (player_c == 0)? 31 : player_c-1;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -260,7 +265,7 @@ module player(
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
 				nxt_player_r = player_r;
-				nxt_player_c = player_c+1;
+				nxt_player_c = (player_c == 31)? 0 : player_c+1;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -278,6 +283,7 @@ module player(
 	reg [19:0] prv_monster0_pos, prv_monster1_pos, prv_monster2_pos, prv_monster3_pos;
 	wire touch_monster0, touch_monster1, touch_monster2, touch_monster3;
 
+	assign player_hp = hp;
 	assign player_alive = (hp > 0)? 1'b1 : 1'b0;
 	assign touch_monster0 = (map_idx == `MAP0 && monster0_alive == 1'b1 && prv_monster0_pos != {monster0_r, monster0_c} && {monster0_r, monster0_c} == {player_r, player_c})? 1'b1 : 1'b0;
 	assign touch_monster1 = (map_idx == `MAP0 && monster1_alive == 1'b1 && prv_monster1_pos != {monster1_r, monster1_c} && {monster1_r, monster1_c} == {player_r, player_c})? 1'b1 : 1'b0;
@@ -314,12 +320,31 @@ module player(
 	wire [11:0] pixel_down0, pixel_down1, pixel_down2;
 	wire [11:0] pixel_left0, pixel_left1, pixel_left2;
 	wire [11:0] pixel_right0, pixel_right1, pixel_right2;
-	wire player_display_en;         // whether (h_cnt, v_cnt) is inside player
+	wire is_game_map;               // whether is map or ending
 	
-	assign player_display_en = (player_v <= v_cnt && v_cnt <= player_v+`SPRITE_LEN && player_h <= h_cnt && h_cnt <= player_h+`SPRITE_LEN)? 1'b1 : 1'b0;
+	reg	player_display_en;          // whether (h_cnt, v_cnt) is inside player
+	reg vertical_en, horizontal_en;
+	
+	assign is_game_map = (map_idx == `MAP0 || map_idx == `MAP1)? 1'b1 : 1'b0;
 	assign mem_row = (v_cnt - player_v)>>1;
 	assign mem_col = (h_cnt - player_h)>>1;
 	
+	// dealing with whether (h_cnt, v_cnt) is inside player
+	always@(*) begin
+		if(player_v <= player_v + `SPRITE_LEN) begin
+			vertical_en = (player_v <= v_cnt && v_cnt <= player_v+`SPRITE_LEN);
+		end else begin
+			vertical_en = (player_v <= v_cnt || v_cnt <= player_v+`SPRITE_LEN);
+		end
+		if(player_h <= player_h + `SPRITE_LEN) begin
+			horizontal_en = (player_h <= h_cnt && h_cnt <= player_h+`SPRITE_LEN);
+		end else begin
+			horizontal_en = (player_h <= h_cnt || h_cnt <= player_h+`SPRITE_LEN);
+		end
+		player_display_en = (vertical_en && horizontal_en);
+	end
+	
+	// dealing with which pixel to display
 	always@(*)begin
 		case(move_stat)
 		`MOVE_STOP: begin
@@ -367,7 +392,7 @@ module player(
 			pixel_player = pixel_down0;
 		end
 		endcase
-		pixel_player = (player_alive == 1'b1 && player_display_en == 1'b1)? pixel_player : `TRANSPARENT;
+		pixel_player = (is_game_map == 1'b1 && player_alive == 1'b1 && player_display_en == 1'b1)? pixel_player : `TRANSPARENT;
 	end
 	mem_addr_gen_player mem_addr_gen_player_inst(
 		.en(player_display_en),

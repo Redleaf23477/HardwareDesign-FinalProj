@@ -1,4 +1,5 @@
 module mem_addr_gen_map(
+	input show_fake_wall,
 	input [9:0] h_cnt,
 	input [9:0] v_cnt,
 	output [16:0] pixel_addr,
@@ -24,6 +25,7 @@ module mem_addr_gen_map(
 						( map == 3'b000 ) ? co0 :
 						( map == 3'b001 ) ? co1 :
 						( map == 3'b010 ) ? co2 :
-						( map == 3'b011 ) ? co3 : 0;  //640*480 --> 320*240
+						( map == 3'b011 ) ? co3 :
+						( show_fake_wall == 1'b0 )? co2 : co0;  //640*480 --> 320*240
 	
 endmodule

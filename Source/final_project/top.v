@@ -355,6 +355,21 @@ module top(
 		*/
 	);
 	
+	// items
+	
+	item item_inst(
+		.clk(clk),
+		.clk_25MHz(clk_25MHz),
+		.rst(rst),
+		.map_idx(map_state),
+		.h_cnt(h_cnt),
+		.v_cnt(v_cnt),
+		.player_x(player_c),
+		.player_y(player_r),
+		.pixel_item(pixel_item),
+		.item_picked_cnt(led_picked)
+	);
+	
 	// map
 	
 	wire [16:0] pixel_addr_map;
@@ -365,7 +380,8 @@ module top(
 	mt map_type(
 		.clk(clk_13),
 		.rst(rst),
-		.sw_map(sw_map),
+		.player_alive(player_alive),
+		.led_picked_num(led_picked),
 		.player_r(player_r),
 		.player_c(player_c),
 		.map_idx(map_state),
@@ -386,6 +402,7 @@ module top(
 	);
 	
 	mem_addr_gen_map mem_addr_gen_map_inst(
+	   .show_fake_wall(sw_map),
 	   .h_cnt(h_cnt),
 	   .v_cnt(v_cnt),
 	   .pixel_addr(pixel_addr_map),
@@ -394,17 +411,5 @@ module top(
 	   .map(gen_map_return)
 	);
 	
-	item item_inst(
-		.clk(clk),
-		.clk_25MHz(clk_25MHz),
-		.rst(rst),
-		.map_idx(map_state),
-		.h_cnt(h_cnt),
-		.v_cnt(v_cnt),
-		.player_x(player_c),
-		.player_y(player_r),
-		.pixel_item(pixel_item),
-		.item_picked_cnt(led_picked)
-	);
 	
 endmodule
