@@ -69,8 +69,10 @@ module top(
 	wire [11:0] pixel_arrow;     // pixel of shortest path direction to player
 	wire [11:0] pixel_monster0;  // pixel of monster0
 	wire [11:0] pixel_monster1;  // pixel of monster1
+	/*
 	wire [11:0] pixel_monster2;  // pixel of monster2
 	wire [11:0] pixel_monster3;  // pixel of monster3
+	*/
 	wire [11:0] pixel_attack;	 //	pixel of attack
 	wire [11:0] pixel_item;		 //	pixel of item
 	wire [11:0] pixel;           // final pixel to display
@@ -95,8 +97,10 @@ module top(
 		.pixel_map(pixel_map),
 		.pixel_monster0(pixel_monster0),
 		.pixel_monster1(pixel_monster1),
+		/*
 		.pixel_monster2(pixel_monster2),
 		.pixel_monster3(pixel_monster3),
+		*/
 		.pixel_attack(pixel_attack),
 		.pixel_item(pixel_item),
 		.pixel(pixel)
@@ -151,21 +155,22 @@ module top(
 	wire [2:0] dir_monster0_to_player;
 	wire [9:0] dist_monster0_to_player;
 	
-	wire [9:1] monster1_r, monster1_c;
+	wire [9:0] monster1_r, monster1_c;
 	wire monster1_alive;
-	wire [2:1] dir_monster1_to_player;
-	wire [9:1] dist_monster1_to_player;
+	wire [2:0] dir_monster1_to_player;
+	wire [9:0] dist_monster1_to_player;
 	
-	wire [9:2] monster2_r, monster2_c;
+	/*
+	wire [9:0] monster2_r, monster2_c;
 	wire monster2_alive;
-	wire [2:2] dir_monster2_to_player;
-	wire [9:2] dist_monster2_to_player;
+	wire [2:0] dir_monster2_to_player;
+	wire [9:0] dist_monster2_to_player;
 	
-	wire [9:3] monster3_r, monster3_c;
+	wire [9:0] monster3_r, monster3_c;
 	wire monster3_alive;
-	wire [2:3] dir_monster3_to_player;
-	wire [9:3] dist_monster3_to_player;
-	
+	wire [2:0] dir_monster3_to_player;
+	wire [9:0] dist_monster3_to_player;
+	*/
 	
 	// player instance
 	player player_inst(
@@ -191,12 +196,14 @@ module top(
 		.monster1_r(monster1_r),
 		.monster1_c(monster1_c),
 		.monster1_alive(monster1_alive),
+		/*
 		.monster2_r(monster2_r),
 		.monster2_c(monster2_c),
 		.monster2_alive(monster2_alive),
 		.monster3_r(monster3_r),
 		.monster3_c(monster3_c),
 		.monster3_alive(monster3_alive),
+		*/
 		.pixel_player(pixel_player),
 		.player_hp(seg7_hp)
 	);
@@ -254,6 +261,7 @@ module top(
 		.pixel_monster(pixel_monster1)
 	);
 	
+	/*
 	// monster2 instance
 	monster2 monster2_inst(
 		.clk_13(clk_13),
@@ -291,6 +299,7 @@ module top(
 		.dist_to_player(dist_monster3_to_player),
 		.pixel_monster(pixel_monster3)
 	);
+	*/
 	
 	
 	// debug: display shortest path tree on map
@@ -331,7 +340,8 @@ module top(
 		.query_r2(monster1_r),
 		.query_c2(monster1_c),
 		.sp_dir2(dir_monster1_to_player),
-		.sp_dist2(dist_monster1_to_player),
+		.sp_dist2(dist_monster1_to_player)
+		/*
 		// 3st query : monster2
 		.query_r3(monster2_r),
 		.query_c3(monster2_c),
@@ -342,6 +352,7 @@ module top(
 		.query_c4(monster3_c),
 		.sp_dir4(dir_monster3_to_player),
 		.sp_dist4(dist_monster3_to_player)
+		*/
 	);
 	
 	// map
