@@ -36,7 +36,7 @@ module mt(input clk,
 	parameter S4_SPL = 3'b100;*/
 	reg [2:0] state, next_state;
 	
-	always @(posedge clk) begin
+	always @(posedge clk, posedge rst) begin
 		if (rst == 1'b1) begin
 			state = S0_RESET;
 		end

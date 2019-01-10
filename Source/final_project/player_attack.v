@@ -7,7 +7,7 @@ module player_attack(input clk,
 					 input [9:0] player_x,	//player_c
 					 input [9:0] player_y,	//player_r
 					 output reg [11:0] pixel_attack,	// rgb pixel of attack
-					 output attacking_special	//	player is attacking or not
+					 output attacking_special	        //	player is attacking or not
 );
 	
 /////////////////////////////////////////////////////////////////

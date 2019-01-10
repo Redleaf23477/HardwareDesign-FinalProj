@@ -31,6 +31,9 @@
 `define MOVE_LEFT  3'd3
 `define MOVE_RIGHT 3'd4
 
+`define HP_FULL_MONSTER0      3'd5
+`define DAMAGE_PLAYER_SKILL 3'd5
+
 // color
 
 `define TRANSPARENT 12'hCBE
@@ -49,6 +52,12 @@ module monster0(
 	
 	output reg [9:0] monster_r,        // position of monster on map
 	output reg [9:0] monster_c,
+	
+	input player_use_skill,
+	output monster_alive,
+	
+	input [9:0] player_r,
+	input [9:0] player_c,
 	
 	input [2:0] dir_to_player,         // shortest path direction to player
 	input [9:0] dist_to_player,        // shortest path distance to player
@@ -145,24 +154,13 @@ module monster0(
 			if(dist_to_player <= `CATCH_THRESHOLD) begin
 				nxt_move_stat = dir_to_player;
 				nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-				if(dir_to_player == `MOVE_UP) begin
-					nxt_monster_r = monster_r - 1;
-					nxt_monster_c = monster_c;
-				end else if(dir_to_player == `MOVE_DOWN) begin
-					nxt_monster_r = monster_r + 1;
-					nxt_monster_c = monster_c;
-				end else if(dir_to_player == `MOVE_LEFT) begin
-					nxt_monster_r = monster_r;
-					nxt_monster_c = monster_c - 1;
-				end else begin  // dir_to_player == `MOVE_RIGHT
-					nxt_monster_r = monster_r;
-					nxt_monster_c = monster_c + 1;
-				end
 			end
 		end
 		`MOVE_UP: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
+				nxt_monster_r = monster_r - 1;
+				nxt_monster_c = monster_c;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -170,6 +168,8 @@ module monster0(
 		`MOVE_DOWN: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
+				nxt_monster_r = monster_r + 1;
+				nxt_monster_c = monster_c;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -177,6 +177,8 @@ module monster0(
 		`MOVE_LEFT: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
+				nxt_monster_r = monster_r;
+				nxt_monster_c = monster_c - 1;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -184,6 +186,8 @@ module monster0(
 		`MOVE_RIGHT: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
+				nxt_monster_r = monster_r;
+				nxt_monster_c = monster_c + 1;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -193,6 +197,28 @@ module monster0(
 			nxt_move_cnt = 0;
 		end
 		endcase
+	end
+	
+	// monster alive
+	
+	reg [4:0] hp, nxt_hp;
+	reg [9:0] dr, dc;
+	assign monster_alive = (hp > 0)? 1'b1 : 1'b0;
+	
+	always@(posedge clk_13, posedge rst) begin
+		if(rst == 1'b1) begin
+			hp <= `HP_FULL_MONSTER0;
+		end else begin
+			hp <= nxt_hp;
+		end
+	end
+	always@(*) begin
+		nxt_hp = hp;
+		dr = (player_r > monster_r)? player_r - monster_r : monster_r - player_r;
+		dc = (player_c - monster_c)? player_c - monster_c : monster_c - player_c;
+		if(hp > 0 && player_use_skill == 1'b1 && dr+dc <= 2) begin
+			nxt_hp = (hp > `DAMAGE_PLAYER_SKILL)? hp - `DAMAGE_PLAYER_SKILL : 0;
+		end
 	end
 	
 	// monster display
@@ -207,7 +233,7 @@ module monster0(
 	assign mem_col = (h_cnt - monster_h)>>1;
 	
 	always@(*)begin
-		pixel_monster = (monster_display_en == 1'b1)? pixel_monster0 : `TRANSPARENT;
+		pixel_monster = (monster_alive == 1'b1 && monster_display_en == 1'b1)? pixel_monster0 : `TRANSPARENT;
 	end
 	
 	mem_addr_gen_monster0 mem_addr_gen_monster0_inst(
