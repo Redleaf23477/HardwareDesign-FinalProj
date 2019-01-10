@@ -197,7 +197,7 @@ module top(
 		.monster3_r(monster3_r),
 		.monster3_c(monster3_c),
 		.monster3_alive(monster3_alive),
-		.pixel_player(pixel_player)
+		.pixel_player(pixel_player),
 		.player_hp(seg7_hp)
 	);
 	
@@ -387,6 +387,7 @@ module top(
 		.clk(clk),
 		.clk_25MHz(clk_25MHz),
 		.rst(rst),
+		.map_idx(map_state),
 		.h_cnt(h_cnt),
 		.v_cnt(v_cnt),
 		.player_x(player_c),
