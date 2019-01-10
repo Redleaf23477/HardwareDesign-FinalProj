@@ -6,8 +6,9 @@ module player_attack(input clk,
 					 input [9:0] v_cnt,
 					 input [9:0] player_x,	//player_c
 					 input [9:0] player_y,	//player_r
-					 output reg [11:0] pixel_attack,	// rgb pixel of attack
-					 output attacking_special	        //	player is attacking or not
+					 output reg [11:0] pixel_attack,	//	rgb pixel of attack
+					 output attacking_special,	        //	player is attacking or not
+					 output [4:0] cd_show
 );
 	
 /////////////////////////////////////////////////////////////////
@@ -31,36 +32,43 @@ module player_attack(input clk,
 	parameter S0_STAY = 2'b00;
 	parameter S1_NORM = 2'b01;
 	parameter S2_SPEC = 2'b10;
+	parameter S3_INCD = 2'b11;
 	reg [1:0] state, next_state;
 	
 	assign attacking_special = (state == S2_SPEC) ? 1 : 0;
 	
-	reg [26:0] fake_count;
-	reg finished;
+	reg [25:0] special_attack_count;	//special attack continue time
+	reg special_attack_finished;		//special attack finish
+	reg [31:0] cd_count;				//count to 10 billion
+	reg [4:0] cd_show;					//count to 10 billion how many times (9 -> 0)
 	always @ (posedge clk, posedge rst) begin
 		if (rst) begin
 			state = S0_STAY;
-			fake_count = 0;
-			finished = 0;
+			special_attack_count = 0;
+			special_attack_finished = 0;
+			cd_count = 0;
+			cd_show = 9;
 		end else begin
-			if (state == S0_STAY && next_state == S1_NORM) begin
-			end else if (state == S0_STAY && next_state == S2_SPEC) begin
+			if ( next_state == S2_SPEC && state != S2_SPEC ) begin
+				special_attack_count = 0;
+				special_attack_finished = 0;
+			end else if ( next_state == S3_INCD && state != S3_INCD ) begin
+				cd_count = 0;
+				cd_show = 9;
 			end
 			state = next_state;
 			
 			case (state)
-				S0_STAY: begin
-					fake_count = 0;
-					finished <= 0;
-				end
-				S1_NORM: begin
-					
-				end
+				/*S0_STAY: begin
+				end*/
+				/*S1_NORM: begin
+				end*/
 				S2_SPEC: begin
-					fake_count <= fake_count + 1;
-					if (fake_count == 27'b100_0000_0000_0000_0000_0000_0000) begin
-						fake_count <= 0;
-						finished <= 1;
+					if (special_attack_count == 26'b10_0000_0000_0000_0000_0000_0000) begin
+						special_attack_count <= 0;
+						special_attack_finished <= 1;
+					end else begin
+						special_attack_count <= special_attack_count + 1;
 					end
 					if ( hc >= 320 || vc >= 160 ) begin
 						pixel_addr <= 0;
@@ -106,6 +114,18 @@ module player_attack(input clk,
 						pixel_attack_en <= 1'b0;
 					end
 				end
+				S3_INCD: begin
+					if (cd_count == 100000000) begin
+						cd_count <= 0;
+						if (cd_show > 0) begin
+							cd_show <= cd_show - 1;
+						end else begin
+							cd_show <= cd_show;
+						end
+					end else begin
+						cd_count <= cd_count + 1;
+					end
+				end
 			endcase
 		end
 	end
@@ -116,15 +136,24 @@ module player_attack(input clk,
 			S0_STAY: begin
 				if (attack_special_pressed == 1'b1) begin	// pressed 1
 					next_state = S2_SPEC;
+				end else begin
+					next_state = S0_STAY;
 				end
 			end
-			S1_NORM: begin
-			end
+			/*S1_NORM: begin
+			end*/
 			S2_SPEC: begin
-				if (finished == 1) begin
-					next_state = S0_STAY;
+				if (special_attack_finished == 1) begin
+					next_state = S3_INCD;
 				end else begin
 					next_state = S2_SPEC;
+				end
+			end
+			S3_INCD: begin
+				if (cd_show == 0) begin
+					next_state = S0_STAY;
+				end else begin
+					next_state = S3_INCD;
 				end
 			end
 		endcase

@@ -60,13 +60,16 @@ module player(
 	
 	output reg [9:0] player_r,        // position of player on map
 	output reg [9:0] player_c,
+	output [4:0] player_hp,
 	output player_alive,
 	
 	input [9:0] monster0_r,
 	input [9:0] monster0_c,
 	input monster0_alive,
 	
-	output reg [11:0] pixel_player    // rgb pixel of player
+	output reg [11:0] pixel_player	// rgb pixel of player
+	
+	
 );
 
 	reg [2:0] move_stat, nxt_move_stat;
@@ -255,6 +258,7 @@ module player(
 	// player hp
 	reg [4:0] hp, nxt_hp, damage_sum;
 	reg [19:0] prv_monster_pos;
+	assign player_hp = hp;
 	assign player_alive = (hp > 0)? 1'b1 : 1'b0;
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
