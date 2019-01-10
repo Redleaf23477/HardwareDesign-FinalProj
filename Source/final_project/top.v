@@ -34,6 +34,15 @@ module top(
 		.clk13(clk_13),
 		.clk22(clk_22)
     );
+	
+	// button debounce
+	wire rst_pressed, up_debounce, down_debounce, left_debounce, right_debounce;
+	
+	debounce rst_deb(.pb_debounced(rst_pressed), .pb(rst), .clk(clk_13));
+	debounce up_deb(.pb_debounced(up_debounce), .pb(BTNU), .clk(clk_13));
+	debounce down_deb(.pb_debounced(down_debounce), .pb(BTND), .clk(clk_13));
+	debounce left_deb(.pb_debounced(left_debounce), .pb(BTNL), .clk(clk_13));
+	debounce right_deb(.pb_debounced(right_debounce), .pb(BTNR), .clk(clk_13));
 
 	//KeyboardDecoder
 	wire shift_down;
@@ -47,7 +56,7 @@ module top(
 		.key_valid(been_ready),
 		.PS2_DATA(PS2_DATA),
 		.PS2_CLK(PS2_CLK),
-		.rst(rst),
+		.rst(rst_pressed),
 		.clk(clk)
 	);
 	
@@ -81,7 +90,7 @@ module top(
 	
 	vga_controller vga_controller_inst(
 		.pclk(clk_25MHz),
-		.reset(rst),
+		.reset(rst_pressed),
 		.hsync(hsync),
 		.vsync(vsync),
 		.valid(vga_valid),
@@ -115,20 +124,12 @@ module top(
 		.display(DISPLAY),
 		.digit(DIGIT),
 		.led(led),
-		.rst(rst),
+		.rst(rst_pressed),
 		.clk(clk),
 		.led_picked(led_picked),
 		.seg7_cd(seg7_cd),
 		.seg7_hp(seg7_hp)
 	);
-	
-	// button debounce
-	wire up_debounce, down_debounce, left_debounce, right_debounce;
-	
-	debounce up_deb(.pb_debounced(up_debounce), .pb(BTNU), .clk(clk_13));
-	debounce down_deb(.pb_debounced(down_debounce), .pb(BTND), .clk(clk_13));
-	debounce left_deb(.pb_debounced(left_debounce), .pb(BTNL), .clk(clk_13));
-	debounce right_deb(.pb_debounced(right_debounce), .pb(BTNR), .clk(clk_13));
 	
 	// control keys
 	wire up_pressed, down_pressed, left_pressed, right_pressed;
@@ -176,7 +177,7 @@ module top(
 	player player_inst(
 		.clk_13(clk_13),
 		.clk_25MHz(clk_25MHz),
-		.rst(rst),
+		.rst(rst_pressed),
 		.up_pressed(up_pressed),
 		.down_pressed(down_pressed),
 		.left_pressed(left_pressed),
@@ -211,7 +212,7 @@ module top(
 	player_attack player_attack_inst(
 		.clk(clk),
 		.clk_25MHz(clk_25MHz),
-		.rst(rst),
+		.rst(rst_pressed),
 		.attack_special_pressed(attack_special_pressed),
 		.h_cnt(h_cnt),
 		.v_cnt(v_cnt),
@@ -227,7 +228,7 @@ module top(
 	monster0 monster0_inst(
 		.clk_13(clk_13),
 		.clk_25MHz(clk_25MHz),
-		.rst(rst),
+		.rst(rst_pressed),
 		.h_cnt(h_cnt),
 		.v_cnt(v_cnt),
 		.monster_r(monster0_r),
@@ -246,7 +247,7 @@ module top(
 	monster1 monster1_inst(
 		.clk_13(clk_13),
 		.clk_25MHz(clk_25MHz),
-		.rst(rst),
+		.rst(rst_pressed),
 		.h_cnt(h_cnt),
 		.v_cnt(v_cnt),
 		.monster_r(monster1_r),
@@ -266,7 +267,7 @@ module top(
 	monster2 monster2_inst(
 		.clk_13(clk_13),
 		.clk_25MHz(clk_25MHz),
-		.rst(rst),
+		.rst(rst_pressed),
 		.h_cnt(h_cnt),
 		.v_cnt(v_cnt),
 		.monster_r(monster2_r),
@@ -285,7 +286,7 @@ module top(
 	monster3 monster3_inst(
 		.clk_13(clk_13),
 		.clk_25MHz(clk_25MHz),
-		.rst(rst),
+		.rst(rst_pressed),
 		.h_cnt(h_cnt),
 		.v_cnt(v_cnt),
 		.monster_r(monster3_r),
@@ -322,7 +323,7 @@ module top(
 	
 	bellman_ford_shortest_path bfsp (
 		.clk(clk),
-		.rst(rst),
+		.rst(rst_pressed),
 		.player_r(player_r),
 		.player_c(player_c),
 		.map_stat(map_state),
@@ -360,7 +361,7 @@ module top(
 	item item_inst(
 		.clk(clk),
 		.clk_25MHz(clk_25MHz),
-		.rst(rst),
+		.rst(rst_pressed),
 		.map_idx(map_state),
 		.h_cnt(h_cnt),
 		.v_cnt(v_cnt),
@@ -379,7 +380,7 @@ module top(
 	
 	mt map_type(
 		.clk(clk_13),
-		.rst(rst),
+		.rst(rst_pressed),
 		.player_alive(player_alive),
 		.led_picked_num(led_picked),
 		.player_r(player_r),

@@ -54,7 +54,7 @@ module mt(input clk,
 	assign map_idx = state;
 	
 	
-	always @(posedge clk) begin
+	always @(posedge clk, posedge rst) begin
 		if (rst == 1'b1) begin
 			state = S0_MAP0;
 		end

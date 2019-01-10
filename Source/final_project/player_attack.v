@@ -175,7 +175,7 @@ module player_attack(input clk,
 				pixel_attack = pixel_attack_special;
 			end
 		endcase
-		pixel_attack = (pixel_attack_en == 1'b1) ? pixel_attack : 12'hCBE;
+		pixel_attack = (state == S2_SPEC && pixel_attack_en == 1'b1) ? pixel_attack : 12'hCBE;
 	end
 	
 	wire [11:0] data;
