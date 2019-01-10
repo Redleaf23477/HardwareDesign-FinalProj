@@ -73,12 +73,14 @@ module player(
 	input [9:0] monster1_r,
 	input [9:0] monster1_c,
 	input monster1_alive,
+	/*
 	input [9:0] monster2_r,
 	input [9:0] monster2_c,
 	input monster2_alive,
 	input [9:0] monster3_r,
 	input [9:0] monster3_c,
 	input monster3_alive,
+	*/
 	
 	output reg [11:0] pixel_player	// rgb pixel of player
 	
@@ -187,8 +189,6 @@ module player(
 					if(dest_is_valid == 1'b1) begin
 						nxt_move_stat = `MOVE_UP;
 						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-						nxt_player_r = dest_r;
-						nxt_player_c = dest_c;
 					end else begin
 						nxt_move_stat = `MOVE_STOP;
 						nxt_move_cnt = 0;
@@ -200,8 +200,6 @@ module player(
 					if(dest_is_valid == 1'b1) begin
 						nxt_move_stat = `MOVE_DOWN;
 						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-						nxt_player_r = dest_r;
-						nxt_player_c = dest_c;
 					end else begin
 						nxt_move_stat = `MOVE_STOP;
 						nxt_move_cnt = 0;
@@ -213,8 +211,6 @@ module player(
 					if(dest_is_valid == 1'b1) begin
 						nxt_move_stat = `MOVE_LEFT;
 						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-						nxt_player_r = dest_r;
-						nxt_player_c = dest_c;
 					end else begin
 						nxt_move_stat = `MOVE_STOP;
 						nxt_move_cnt = 0;
@@ -226,8 +222,6 @@ module player(
 					if(dest_is_valid == 1'b1) begin
 						nxt_move_stat = `MOVE_RIGHT;
 						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-						nxt_player_r = dest_r;
-						nxt_player_c = dest_c;
 					end else begin
 						nxt_move_stat = `MOVE_STOP;
 						nxt_move_cnt = 0;
@@ -287,21 +281,28 @@ module player(
 	assign player_alive = (hp > 0)? 1'b1 : 1'b0;
 	assign touch_monster0 = (map_idx == `MAP0 && monster0_alive == 1'b1 && prv_monster0_pos != {monster0_r, monster0_c} && {monster0_r, monster0_c} == {player_r, player_c})? 1'b1 : 1'b0;
 	assign touch_monster1 = (map_idx == `MAP0 && monster1_alive == 1'b1 && prv_monster1_pos != {monster1_r, monster1_c} && {monster1_r, monster1_c} == {player_r, player_c})? 1'b1 : 1'b0;
+	/*
 	assign touch_monster2 = (map_idx == `MAP0 && monster2_alive == 1'b1 && prv_monster2_pos != {monster2_r, monster2_c} && {monster2_r, monster2_c} == {player_r, player_c})? 1'b1 : 1'b0;
 	assign touch_monster3 = (map_idx == `MAP0 && monster3_alive == 1'b1 && prv_monster3_pos != {monster3_r, monster3_c} && {monster3_r, monster3_c} == {player_r, player_c})? 1'b1 : 1'b0;
+	*/
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
 			hp <= `HP_FULL_PLAYER;
 			prv_monster0_pos <= {monster0_r, monster0_c};
 			prv_monster1_pos <= {monster1_r, monster1_c};
+			/*
 			prv_monster2_pos <= {monster2_r, monster2_c};
 			prv_monster3_pos <= {monster3_r, monster3_c};
+			*/
 		end else begin
-			hp <= nxt_hp(hp, touch_monster0, touch_monster1, touch_monster2, touch_monster3);
+			// hp <= nxt_hp(hp, touch_monster0, touch_monster1, touch_monster2, touch_monster3);
+			hp <= nxt_hp(hp, touch_monster0, touch_monster1);
 			prv_monster0_pos <= {monster0_r, monster0_c};
 			prv_monster1_pos <= {monster1_r, monster1_c};
+			/*
 			prv_monster2_pos <= {monster2_r, monster2_c};
 			prv_monster3_pos <= {monster3_r, monster3_c};
+			*/
 		end
 	end
 	
@@ -461,14 +462,17 @@ module player(
 	
 	function [4:0] nxt_hp;
 		input [4:0] hp;
-		input touch_monster0, touch_monster1, touch_monster2, touch_monster3;
+		//input touch_monster0, touch_monster1, touch_monster2, touch_monster3;
+		input touch_monster0, touch_monster1;
 		reg [4:0] acc0, acc1, acc2, acc3;
 		begin
 			acc0 = (touch_monster0 == 1'b1)? 1 : 0;
 			acc1 = (touch_monster1 == 1'b1)? acc0+1 : acc0;
+			/*
 			acc2 = (touch_monster2 == 1'b1)? acc1+1 : acc1;
 			acc3 = (touch_monster3 == 1'b1)? acc2+1 : acc2;
-			nxt_hp = (hp > acc3)? hp - acc3 : 0;
+			*/
+			nxt_hp = (hp > acc1)? hp - acc1 : 0;
 		end
 	endfunction
 
