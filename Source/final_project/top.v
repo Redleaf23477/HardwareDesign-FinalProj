@@ -17,7 +17,10 @@ module top(
    output [3:0] vgaGreen,
    output [3:0] vgaBlue,
    output hsync,
-   output vsync
+   output vsync,
+   output [6:0] DISPLAY,
+   output [3:0] DIGIT,
+   output [15:0] led
 );
 
 	// clocks
@@ -97,6 +100,22 @@ module top(
 		.pixel_attack(pixel_attack),
 		.pixel_item(pixel_item),
 		.pixel(pixel)
+	);
+	
+	//board show (seg7 and led)
+	wire [4:0] led_picked;	//[4:0]
+	wire [4:0] seg7_cd;		//[4:0]
+	wire [4:0] seg7_hp;		//[4:0]
+	
+	SevenSegment_LED SevenSegment_LED_inst(
+		.display(DISPLAY),
+		.digit(DIGIT),
+		.led(led),
+		.rst(rst),
+		.clk(clk),
+		.led_picked(led_picked),
+		.seg7_cd(seg7_cd),
+		.seg7_hp(seg7_hp)
 	);
 	
 	// button debounce
@@ -179,7 +198,9 @@ module top(
 		.monster3_c(monster3_c),
 		.monster3_alive(monster3_alive),
 		.pixel_player(pixel_player)
+		.player_hp(seg7_hp)
 	);
+	
 	player_attack player_attack_inst(
 		.clk(clk),
 		.clk_25MHz(clk_25MHz),
@@ -189,8 +210,10 @@ module top(
 		.v_cnt(v_cnt),
 		.player_x(player_c),
 		.player_y(player_r),
+		.player_alive(player_alive),
 		.pixel_attack(pixel_attack),
-		.attacking_special(player_use_skill)
+		.attacking_special(player_use_skill),
+		.cd_show(seg7_cd)
 	);
 
 	// monster0 instance
@@ -360,7 +383,6 @@ module top(
 	   .map(gen_map_return)
 	);
 	
-	wire item_all_picked;
 	item item_inst(
 		.clk(clk),
 		.clk_25MHz(clk_25MHz),
@@ -370,7 +392,7 @@ module top(
 		.player_x(player_c),
 		.player_y(player_r),
 		.pixel_item(pixel_item),
-		.item_all_picked(item_all_picked)
+		.item_picked_cnt(led_picked)
 	);
-  
+	
 endmodule

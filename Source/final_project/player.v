@@ -62,6 +62,7 @@ module player(
 	
 	output reg [9:0] player_r,        // position of player on map
 	output reg [9:0] player_c,
+	output [4:0] player_hp,
 	output player_alive,
 	
 	input [2:0] map_idx,
@@ -79,7 +80,9 @@ module player(
 	input [9:0] monster3_c,
 	input monster3_alive,
 	
-	output reg [11:0] pixel_player    // rgb pixel of player
+	output reg [11:0] pixel_player	// rgb pixel of player
+	
+	
 );
 
 	reg [2:0] move_stat, nxt_move_stat;
@@ -176,49 +179,59 @@ module player(
 		nxt_player_c = player_c;
 		case(move_stat)
 		`MOVE_STOP: begin
-			if(up_pressed == 1'b1) begin
-				nxt_pressed = `MOVE_UP;
-				dest_r = player_r - 1;
-				dest_c = player_c;
-				if(dest_is_valid == 1'b1) begin
-					nxt_move_stat = `MOVE_UP;
-					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-				end else begin
-					nxt_move_stat = `MOVE_STOP;
-					nxt_move_cnt = 0;
-				end
-			end else if(down_pressed == 1'b1) begin
-				nxt_pressed = `MOVE_DOWN;
-				dest_r = player_r + 1;
-				dest_c = player_c;
-				if(dest_is_valid == 1'b1) begin
-					nxt_move_stat = `MOVE_DOWN;
-					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-				end else begin
-					nxt_move_stat = `MOVE_STOP;
-					nxt_move_cnt = 0;
-				end
-			end else if(left_pressed == 1'b1) begin
-				nxt_pressed = `MOVE_LEFT;
-				dest_r = player_r;
-				dest_c = player_c - 1;
-				if(dest_is_valid == 1'b1) begin
-					nxt_move_stat = `MOVE_LEFT;
-					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-				end else begin
-					nxt_move_stat = `MOVE_STOP;
-					nxt_move_cnt = 0;
-				end
-			end else if(right_pressed == 1'b1) begin
-				nxt_pressed = `MOVE_RIGHT;
-				dest_r = player_r;
-				dest_c = player_c + 1;
-				if(dest_is_valid == 1'b1) begin
-					nxt_move_stat = `MOVE_RIGHT;
-					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-				end else begin
-					nxt_move_stat = `MOVE_STOP;
-					nxt_move_cnt = 0;
+			if (hp > 0) begin				
+				if(up_pressed == 1'b1) begin
+					nxt_pressed = `MOVE_UP;
+					dest_r = player_r - 1;
+					dest_c = player_c;
+					if(dest_is_valid == 1'b1) begin
+						nxt_move_stat = `MOVE_UP;
+						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+						nxt_player_r = dest_r;
+						nxt_player_c = dest_c;
+					end else begin
+						nxt_move_stat = `MOVE_STOP;
+						nxt_move_cnt = 0;
+					end
+				end else if(down_pressed == 1'b1) begin
+					nxt_pressed = `MOVE_DOWN;
+					dest_r = player_r + 1;
+					dest_c = player_c;
+					if(dest_is_valid == 1'b1) begin
+						nxt_move_stat = `MOVE_DOWN;
+						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+						nxt_player_r = dest_r;
+						nxt_player_c = dest_c;
+					end else begin
+						nxt_move_stat = `MOVE_STOP;
+						nxt_move_cnt = 0;
+					end
+				end else if(left_pressed == 1'b1) begin
+					nxt_pressed = `MOVE_LEFT;
+					dest_r = player_r;
+					dest_c = player_c - 1;
+					if(dest_is_valid == 1'b1) begin
+						nxt_move_stat = `MOVE_LEFT;
+						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+						nxt_player_r = dest_r;
+						nxt_player_c = dest_c;
+					end else begin
+						nxt_move_stat = `MOVE_STOP;
+						nxt_move_cnt = 0;
+					end
+				end else if(right_pressed == 1'b1) begin
+					nxt_pressed = `MOVE_RIGHT;
+					dest_r = player_r;
+					dest_c = player_c + 1;
+					if(dest_is_valid == 1'b1) begin
+						nxt_move_stat = `MOVE_RIGHT;
+						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+						nxt_player_r = dest_r;
+						nxt_player_c = dest_c;
+					end else begin
+						nxt_move_stat = `MOVE_STOP;
+						nxt_move_cnt = 0;
+					end
 				end
 			end
 		end
@@ -265,11 +278,12 @@ module player(
 		endcase
 	end
 	
+
 	// player hp, maybe need faster clock?
 	reg [4:0] hp;
 	reg [19:0] prv_monster0_pos, prv_monster1_pos, prv_monster2_pos, prv_monster3_pos;
 	wire touch_monster0, touch_monster1, touch_monster2, touch_monster3;
-	
+
 	assign player_alive = (hp > 0)? 1'b1 : 1'b0;
 	assign touch_monster0 = (map_idx == `MAP0 && monster0_alive == 1'b1 && prv_monster0_pos != {monster0_r, monster0_c} && {monster0_r, monster0_c} == {player_r, player_c})? 1'b1 : 1'b0;
 	assign touch_monster1 = (map_idx == `MAP0 && monster1_alive == 1'b1 && prv_monster1_pos != {monster1_r, monster1_c} && {monster1_r, monster1_c} == {player_r, player_c})? 1'b1 : 1'b0;
