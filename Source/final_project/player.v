@@ -166,57 +166,59 @@ module player(
 		nxt_player_c = player_c;
 		case(move_stat)
 		`MOVE_STOP: begin
-			if(up_pressed == 1'b1) begin
-				nxt_pressed = `MOVE_UP;
-				dest_r = player_r - 1;
-				dest_c = player_c;
-				if(dest_is_valid == 1'b1) begin
-					nxt_move_stat = `MOVE_UP;
-					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-					nxt_player_r = dest_r;
-					nxt_player_c = dest_c;
-				end else begin
-					nxt_move_stat = `MOVE_STOP;
-					nxt_move_cnt = 0;
-				end
-			end else if(down_pressed == 1'b1) begin
-				nxt_pressed = `MOVE_DOWN;
-				dest_r = player_r + 1;
-				dest_c = player_c;
-				if(dest_is_valid == 1'b1) begin
-					nxt_move_stat = `MOVE_DOWN;
-					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-					nxt_player_r = dest_r;
-					nxt_player_c = dest_c;
-				end else begin
-					nxt_move_stat = `MOVE_STOP;
-					nxt_move_cnt = 0;
-				end
-			end else if(left_pressed == 1'b1) begin
-				nxt_pressed = `MOVE_LEFT;
-				dest_r = player_r;
-				dest_c = player_c - 1;
-				if(dest_is_valid == 1'b1) begin
-					nxt_move_stat = `MOVE_LEFT;
-					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-					nxt_player_r = dest_r;
-					nxt_player_c = dest_c;
-				end else begin
-					nxt_move_stat = `MOVE_STOP;
-					nxt_move_cnt = 0;
-				end
-			end else if(right_pressed == 1'b1) begin
-				nxt_pressed = `MOVE_RIGHT;
-				dest_r = player_r;
-				dest_c = player_c + 1;
-				if(dest_is_valid == 1'b1) begin
-					nxt_move_stat = `MOVE_RIGHT;
-					nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
-					nxt_player_r = dest_r;
-					nxt_player_c = dest_c;
-				end else begin
-					nxt_move_stat = `MOVE_STOP;
-					nxt_move_cnt = 0;
+			if (hp > 0) begin				
+				if(up_pressed == 1'b1) begin
+					nxt_pressed = `MOVE_UP;
+					dest_r = player_r - 1;
+					dest_c = player_c;
+					if(dest_is_valid == 1'b1) begin
+						nxt_move_stat = `MOVE_UP;
+						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+						nxt_player_r = dest_r;
+						nxt_player_c = dest_c;
+					end else begin
+						nxt_move_stat = `MOVE_STOP;
+						nxt_move_cnt = 0;
+					end
+				end else if(down_pressed == 1'b1) begin
+					nxt_pressed = `MOVE_DOWN;
+					dest_r = player_r + 1;
+					dest_c = player_c;
+					if(dest_is_valid == 1'b1) begin
+						nxt_move_stat = `MOVE_DOWN;
+						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+						nxt_player_r = dest_r;
+						nxt_player_c = dest_c;
+					end else begin
+						nxt_move_stat = `MOVE_STOP;
+						nxt_move_cnt = 0;
+					end
+				end else if(left_pressed == 1'b1) begin
+					nxt_pressed = `MOVE_LEFT;
+					dest_r = player_r;
+					dest_c = player_c - 1;
+					if(dest_is_valid == 1'b1) begin
+						nxt_move_stat = `MOVE_LEFT;
+						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+						nxt_player_r = dest_r;
+						nxt_player_c = dest_c;
+					end else begin
+						nxt_move_stat = `MOVE_STOP;
+						nxt_move_cnt = 0;
+					end
+				end else if(right_pressed == 1'b1) begin
+					nxt_pressed = `MOVE_RIGHT;
+					dest_r = player_r;
+					dest_c = player_c + 1;
+					if(dest_is_valid == 1'b1) begin
+						nxt_move_stat = `MOVE_RIGHT;
+						nxt_move_cnt = (1<<`SPRITE_MOVE_CNT)-1;
+						nxt_player_r = dest_r;
+						nxt_player_c = dest_c;
+					end else begin
+						nxt_move_stat = `MOVE_STOP;
+						nxt_move_cnt = 0;
+					end
 				end
 			end
 		end

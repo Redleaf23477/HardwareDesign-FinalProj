@@ -175,6 +175,7 @@ module top(
 		.v_cnt(v_cnt),
 		.player_x(player_c),
 		.player_y(player_r),
+		.player_alive(player_alive),
 		.pixel_attack(pixel_attack),
 		.attacking_special(player_use_skill),
 		.cd_show(seg7_cd)

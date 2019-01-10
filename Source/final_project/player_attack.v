@@ -6,6 +6,7 @@ module player_attack(input clk,
 					 input [9:0] v_cnt,
 					 input [9:0] player_x,	//player_c
 					 input [9:0] player_y,	//player_r
+					 input player_alive,
 					 output reg [11:0] pixel_attack,	//	rgb pixel of attack
 					 output attacking_special,	        //	player is attacking or not
 					 output [4:0] cd_show
@@ -134,7 +135,7 @@ module player_attack(input clk,
 		next_state = S0_STAY;
 		case (state)
 			S0_STAY: begin
-				if (attack_special_pressed == 1'b1) begin	// pressed 1
+				if (attack_special_pressed == 1'b1 && player_alive == 1'b1) begin	// pressed 1
 					next_state = S2_SPEC;
 				end else begin
 					next_state = S0_STAY;
