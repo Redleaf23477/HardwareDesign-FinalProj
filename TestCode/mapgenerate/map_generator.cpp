@@ -23,8 +23,10 @@ int main(void)
                 mt[i][j] = 1;
             } else if (s[j] == '*') {
                 mt[i][j] = 2;
-            } else {
+            } else if (s[j] == '#'){
                 mt[i][j] = 3;
+            } else {
+                mt[i][j] = 4;
             }
         }
     }
@@ -37,8 +39,10 @@ int main(void)
                 fout << "3'b001;\n";
             } else if (mt[i][j] == 2) {
                 fout << "3'b010;\n";
-            } else {
+            } else if (mt[i][j] == 3) {
                 fout << "3'b011;\n";
+            } else {
+                fout << "3'b100;\n";
             }
         }
         fout << '\n';
