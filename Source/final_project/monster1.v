@@ -20,8 +20,8 @@
 `define MAP_ROAD1   3'b001
 `define MAP_STAIRS  3'b011
 
-`define MAP0_START_R 8
-`define MAP0_START_C 18
+`define MAP0_START_R 1
+`define MAP0_START_C 14
 
 `define MAP0   3'd0
 
@@ -35,7 +35,7 @@
 
 // hp
 
-`define HP_FULL_MONSTER0      3'd5
+`define HP_FULL_monster1      3'd5
 `define DAMAGE_PLAYER_SKILL 3'd5
 
 // color
@@ -46,7 +46,7 @@
 // monster module
 /////////////////////////////////////////////////////////////////
 
-module monster0(
+module monster1(
 	input clk_13,                     // clock same as pb_debounce
 	input clk_25MHz,                  // clock for memory ip
 	input rst,
@@ -212,7 +212,7 @@ module monster0(
 	
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			hp <= `HP_FULL_MONSTER0;
+			hp <= `HP_FULL_monster1;
 		end else begin
 			hp <= nxt_hp;
 		end
@@ -230,7 +230,7 @@ module monster0(
 	wire [11:0] data;
 	wire [9:0]  mem_row, mem_col;
 	wire [16:0] pixel_addr_monster;
-	wire [11:0] pixel_monster0;
+	wire [11:0] pixel_monster1;
 	wire monster_display_en;         // whether (h_cnt, v_cnt) is inside monster
 	
 	assign monster_display_en = (map_idx == `MAP0 && monster_v <= v_cnt && v_cnt <= monster_v+`SPRITE_LEN && monster_h <= h_cnt && h_cnt <= monster_h+`SPRITE_LEN)? 1'b1 : 1'b0;
@@ -238,21 +238,21 @@ module monster0(
 	assign mem_col = (h_cnt - monster_h)>>1;
 	
 	always@(*)begin
-		pixel_monster = (monster_alive == 1'b1 && monster_display_en == 1'b1)? pixel_monster0 : `TRANSPARENT;
+		pixel_monster = (monster_alive == 1'b1 && monster_display_en == 1'b1)? pixel_monster1 : `TRANSPARENT;
 	end
 	
-	mem_addr_gen_monster0 mem_addr_gen_monster0_inst(
+	mem_addr_gen_monster1 mem_addr_gen_monster1_inst(
 		.en(monster_display_en),
 		.row(mem_row),
 		.col(mem_col),
 		.pixel_addr(pixel_addr_monster)
 	);
-	blk_mem_gen_monster0 blk_mem_gen_monster0_inst(
+	blk_mem_gen_monster1 blk_mem_gen_monster1_inst(
 		.clka(clk_25MHz),
 		.wea(0),
 		.addra(pixel_addr_monster),
 		.dina(data[11:0]),
-		.douta(pixel_monster0)
+		.douta(pixel_monster1)
     ); 
 
 endmodule
@@ -261,7 +261,7 @@ endmodule
 // memory address generator for monster
 /////////////////////////////////////////////////////////////////
 
-module mem_addr_gen_monster0(
+module mem_addr_gen_monster1(
 	input en,
 	input [9:0] row,
 	input [9:0] col,
