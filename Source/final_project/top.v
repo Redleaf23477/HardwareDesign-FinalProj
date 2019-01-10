@@ -68,8 +68,11 @@ module top(
 	wire [11:0] pixel_map;       // pixel of map
 	wire [11:0] pixel_arrow;     // pixel of shortest path direction to player
 	wire [11:0] pixel_monster0;  // pixel of monster0
-	wire [11:0] pixel_attack;	//	pixel of attack
-	wire [11:0] pixel_item;		//	pixel of item
+	wire [11:0] pixel_monster1;  // pixel of monster1
+	wire [11:0] pixel_monster2;  // pixel of monster2
+	wire [11:0] pixel_monster3;  // pixel of monster3
+	wire [11:0] pixel_attack;	 //	pixel of attack
+	wire [11:0] pixel_item;		 //	pixel of item
 	wire [11:0] pixel;           // final pixel to display
 	
 	assign {vgaRed, vgaGreen, vgaBlue} = pixel;
@@ -91,6 +94,9 @@ module top(
 		.pixel_arrow(pixel_arrow),
 		.pixel_map(pixel_map),
 		.pixel_monster0(pixel_monster0),
+		.pixel_monster1(pixel_monster1),
+		.pixel_monster2(pixel_monster2),
+		.pixel_monster3(pixel_monster3),
 		.pixel_attack(pixel_attack),
 		.pixel_item(pixel_item),
 		.pixel(pixel)
@@ -129,6 +135,9 @@ module top(
 	
 	// characters : player, monster0
 	
+	// map state
+	wire [2:0] map_state;
+	
 	// player io
 	wire [9:0] player_r, player_c;
 	wire player_alive;
@@ -141,6 +150,22 @@ module top(
 	wire monster0_alive;
 	wire [2:0] dir_monster0_to_player;
 	wire [9:0] dist_monster0_to_player;
+	
+	wire [9:1] monster1_r, monster1_c;
+	wire monster1_alive;
+	wire [2:1] dir_monster1_to_player;
+	wire [9:1] dist_monster1_to_player;
+	
+	wire [9:2] monster2_r, monster2_c;
+	wire monster2_alive;
+	wire [2:2] dir_monster2_to_player;
+	wire [9:2] dist_monster2_to_player;
+	
+	wire [9:3] monster3_r, monster3_c;
+	wire monster3_alive;
+	wire [2:3] dir_monster3_to_player;
+	wire [9:3] dist_monster3_to_player;
+	
 	
 	// player instance
 	player player_inst(
@@ -159,10 +184,20 @@ module top(
 		.player_r(player_r),
 		.player_c(player_c),
 		.player_alive(player_alive),
+		.map_idx(map_state),
 		.monster0_r(monster0_r),
 		.monster0_c(monster0_c),
 		.monster0_alive(monster0_alive),
-		.pixel_player(pixel_player),
+		.monster1_r(monster1_r),
+		.monster1_c(monster1_c),
+		.monster1_alive(monster1_alive),
+		.monster2_r(monster2_r),
+		.monster2_c(monster2_c),
+		.monster2_alive(monster2_alive),
+		.monster3_r(monster3_r),
+		.monster3_c(monster3_c),
+		.monster3_alive(monster3_alive),
+		.pixel_player(pixel_player)
 		.player_hp(seg7_hp)
 	);
 	
@@ -194,10 +229,69 @@ module top(
 		.player_r(player_r),
 		.player_c(player_c),
 		.player_use_skill(player_use_skill),
+		.map_idx(map_state),
 		.dir_to_player(dir_monster0_to_player),
 		.dist_to_player(dist_monster0_to_player),
 		.pixel_monster(pixel_monster0)
 	);
+	
+	// monster1 instance
+	monster1 monster1_inst(
+		.clk_13(clk_13),
+		.clk_25MHz(clk_25MHz),
+		.rst(rst),
+		.h_cnt(h_cnt),
+		.v_cnt(v_cnt),
+		.monster_r(monster1_r),
+		.monster_c(monster1_c),
+		.monster_alive(monster1_alive),
+		.player_r(player_r),
+		.player_c(player_c),
+		.player_use_skill(player_use_skill),
+		.map_idx(map_state),
+		.dir_to_player(dir_monster1_to_player),
+		.dist_to_player(dist_monster1_to_player),
+		.pixel_monster(pixel_monster1)
+	);
+	
+	// monster2 instance
+	monster2 monster2_inst(
+		.clk_13(clk_13),
+		.clk_25MHz(clk_25MHz),
+		.rst(rst),
+		.h_cnt(h_cnt),
+		.v_cnt(v_cnt),
+		.monster_r(monster2_r),
+		.monster_c(monster2_c),
+		.monster_alive(monster2_alive),
+		.player_r(player_r),
+		.player_c(player_c),
+		.player_use_skill(player_use_skill),
+		.map_idx(map_state),
+		.dir_to_player(dir_monster2_to_player),
+		.dist_to_player(dist_monster2_to_player),
+		.pixel_monster(pixel_monster2)
+	);
+	
+	// monster3 instance
+	monster3 monster3_inst(
+		.clk_13(clk_13),
+		.clk_25MHz(clk_25MHz),
+		.rst(rst),
+		.h_cnt(h_cnt),
+		.v_cnt(v_cnt),
+		.monster_r(monster3_r),
+		.monster_c(monster3_c),
+		.monster_alive(monster3_alive),
+		.player_r(player_r),
+		.player_c(player_c),
+		.player_use_skill(player_use_skill),
+		.map_idx(map_state),
+		.dir_to_player(dir_monster3_to_player),
+		.dist_to_player(dist_monster3_to_player),
+		.pixel_monster(pixel_monster3)
+	);
+	
 	
 	// debug: display shortest path tree on map
 	
@@ -217,10 +311,6 @@ module top(
 	
 	// shortest path to player
 	
-	wire [2:0] map_state;
-	
-	assign map_state = 0; // MAP01 = 3'd0
-	
 	bellman_ford_shortest_path bfsp (
 		.clk(clk),
 		.rst(rst),
@@ -236,7 +326,22 @@ module top(
 		.query_r1(monster0_r),
 		.query_c1(monster0_c),
 		.sp_dir1(dir_monster0_to_player),
-		.sp_dist1(dist_monster0_to_player)
+		.sp_dist1(dist_monster0_to_player),
+		// 2st query : monster1
+		.query_r2(monster1_r),
+		.query_c2(monster1_c),
+		.sp_dir2(dir_monster1_to_player),
+		.sp_dist2(dist_monster1_to_player),
+		// 3st query : monster2
+		.query_r3(monster2_r),
+		.query_c3(monster2_c),
+		.sp_dir3(dir_monster2_to_player),
+		.sp_dist3(dist_monster2_to_player),
+		// 4st query : monster3
+		.query_r4(monster3_r),
+		.query_c4(monster3_c),
+		.sp_dir4(dir_monster3_to_player),
+		.sp_dist4(dist_monster3_to_player)
 	);
 	
 	// map
@@ -250,6 +355,9 @@ module top(
 		.clk(clk_13),
 		.rst(rst),
 		.sw_map(sw_map),
+		.player_r(player_r),
+		.player_c(player_c),
+		.map_idx(map_state),
 		.gen_map_x1(gen_map_x),
 		.gen_map_y1(gen_map_y),
 		.gen_map_return1(gen_map_return),

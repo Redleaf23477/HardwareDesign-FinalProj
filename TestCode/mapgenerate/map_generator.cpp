@@ -1,9 +1,9 @@
-#include <iostream>
-#include <string>
+#include <bits/stdc++.h>
 using namespace std;
 
 int main(void)
 {
+	ofstream fout("map.v");
     int n, m;
     cout << "generate n x m map ?\n";
     cout << "n : \n";
@@ -30,19 +30,33 @@ int main(void)
     }
     for (int i = 0; i < n; i++) {
         for (int j = 0; j < m; j++) {
-            cout << "mt[" << i << "][" << j << "] = ";
+            fout << "mt[" << i << "][" << j << "] = ";
             if (mt[i][j] == 0) {
-                cout << "3'b000;\n";
+                fout << "3'b000;\n";
             } else if (mt[i][j] == 1) {
-                cout << "3'b001;\n";
+                fout << "3'b001;\n";
             } else if (mt[i][j] == 2) {
-                cout << "3'b010;\n";
+                fout << "3'b010;\n";
             } else {
-                cout << "3'b011;\n";
+                fout << "3'b011;\n";
             }
         }
-        cout << '\n';
+        fout << '\n';
     }
 
     return 0;
 }
+
+/*
+10 20
+********************
+*-=-*=--*--==---==-*
+*-*=--****-***=-****
+****--=--*-*=====--*
+*-=*=*-*--=*=***=*-*
+*-**--=*=*--=====***
+*=---*-=-*-**-****-*
+*=****=*=--*---*--=*
+*--=*--*-*-=-*-=-*-*
+********************
+*/

@@ -18,8 +18,10 @@
 `define MAP_ROAD1   3'b001
 `define MAP_STAIRS  3'b011
 
-`define MAP01_START_R 3
-`define MAP01_START_C 3
+`define MAP0_START_R 3
+`define MAP0_START_C 3
+
+`define MAP0  3'd0
 
 // move state
 
@@ -63,9 +65,20 @@ module player(
 	output [4:0] player_hp,
 	output player_alive,
 	
+	input [2:0] map_idx,
+	
 	input [9:0] monster0_r,
 	input [9:0] monster0_c,
 	input monster0_alive,
+	input [9:0] monster1_r,
+	input [9:0] monster1_c,
+	input monster1_alive,
+	input [9:0] monster2_r,
+	input [9:0] monster2_c,
+	input monster2_alive,
+	input [9:0] monster3_r,
+	input [9:0] monster3_c,
+	input monster3_alive,
 	
 	output reg [11:0] pixel_player	// rgb pixel of player
 	
@@ -81,8 +94,8 @@ module player(
 	// player position on vga
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			player_v <= `MAP01_START_R * `SPRITE_LEN;
-			player_h <= `MAP01_START_C * `SPRITE_LEN;
+			player_v <= `MAP0_START_R * `SPRITE_LEN;
+			player_h <= `MAP0_START_C * `SPRITE_LEN;
 		end else begin
 			player_v <= nxt_player_v;
 			player_h <= nxt_player_h;
@@ -143,8 +156,8 @@ module player(
 	
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
-			player_r <= `MAP01_START_R;
-			player_c <= `MAP01_START_C;
+			player_r <= `MAP0_START_R;
+			player_c <= `MAP0_START_C;
 			move_stat <= `MOVE_STOP;
 			pressed <= `MOVE_STOP;
 			move_cnt <= 0;
@@ -225,6 +238,8 @@ module player(
 		`MOVE_UP: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
+				nxt_player_r = player_r-1;
+				nxt_player_c = player_c;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -232,6 +247,8 @@ module player(
 		`MOVE_DOWN: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
+				nxt_player_r = player_r+1;
+				nxt_player_c = player_c;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -239,6 +256,8 @@ module player(
 		`MOVE_LEFT: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
+				nxt_player_r = player_r;
+				nxt_player_c = player_c-1;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -246,6 +265,8 @@ module player(
 		`MOVE_RIGHT: begin
 			if(move_cnt == 0) begin
 			 	nxt_move_stat = `MOVE_STOP;
+				nxt_player_r = player_r;
+				nxt_player_c = player_c+1;
 			end else begin
 				nxt_move_cnt = move_cnt-1;
 			end
@@ -257,28 +278,31 @@ module player(
 		endcase
 	end
 	
-	// player hp
-	reg [4:0] hp, nxt_hp, damage_sum;
-	reg [19:0] prv_monster_pos;
-	assign player_hp = hp;
+
+	// player hp, maybe need faster clock?
+	reg [4:0] hp;
+	reg [19:0] prv_monster0_pos, prv_monster1_pos, prv_monster2_pos, prv_monster3_pos;
+	wire touch_monster0, touch_monster1, touch_monster2, touch_monster3;
+
 	assign player_alive = (hp > 0)? 1'b1 : 1'b0;
+	assign touch_monster0 = (map_idx == `MAP0 && monster0_alive == 1'b1 && prv_monster0_pos != {monster0_r, monster0_c} && {monster0_r, monster0_c} == {player_r, player_c})? 1'b1 : 1'b0;
+	assign touch_monster1 = (map_idx == `MAP0 && monster1_alive == 1'b1 && prv_monster1_pos != {monster1_r, monster1_c} && {monster1_r, monster1_c} == {player_r, player_c})? 1'b1 : 1'b0;
+	assign touch_monster2 = (map_idx == `MAP0 && monster2_alive == 1'b1 && prv_monster2_pos != {monster2_r, monster2_c} && {monster2_r, monster2_c} == {player_r, player_c})? 1'b1 : 1'b0;
+	assign touch_monster3 = (map_idx == `MAP0 && monster3_alive == 1'b1 && prv_monster3_pos != {monster3_r, monster3_c} && {monster3_r, monster3_c} == {player_r, player_c})? 1'b1 : 1'b0;
 	always@(posedge clk_13, posedge rst) begin
 		if(rst == 1'b1) begin
 			hp <= `HP_FULL_PLAYER;
-			prv_monster_pos <= {monster0_r, monster0_c};
+			prv_monster0_pos <= {monster0_r, monster0_c};
+			prv_monster1_pos <= {monster1_r, monster1_c};
+			prv_monster2_pos <= {monster2_r, monster2_c};
+			prv_monster3_pos <= {monster3_r, monster3_c};
 		end else begin
-			hp <= nxt_hp;
-			prv_monster_pos <= {monster0_r, monster0_c};
+			hp <= nxt_hp(hp, touch_monster0, touch_monster1, touch_monster2, touch_monster3);
+			prv_monster0_pos <= {monster0_r, monster0_c};
+			prv_monster1_pos <= {monster1_r, monster1_c};
+			prv_monster2_pos <= {monster2_r, monster2_c};
+			prv_monster3_pos <= {monster3_r, monster3_c};
 		end
-	end
-	always@(*) begin
-		damage_sum = 0;
-		if(hp > 0) begin
-			if(monster0_alive == 1'b1 && prv_monster_pos != {monster0_r, monster0_c} && {monster0_r, monster0_c} == {player_r, player_c}) begin
-				damage_sum = (damage_sum + `DAMAGE_MONSTER0 <= hp)? damage_sum + `DAMAGE_MONSTER0 : hp;
-			end
-		end
-		nxt_hp = hp - damage_sum;
 	end
 	
 	// player display
@@ -434,6 +458,19 @@ module player(
 		.dina(data[11:0]),
 		.douta(pixel_right2)
     ); 
+	
+	function [4:0] nxt_hp;
+		input [4:0] hp;
+		input touch_monster0, touch_monster1, touch_monster2, touch_monster3;
+		reg [4:0] acc0, acc1, acc2, acc3;
+		begin
+			acc0 = (touch_monster0 == 1'b1)? 1 : 0;
+			acc1 = (touch_monster1 == 1'b1)? acc0+1 : acc0;
+			acc2 = (touch_monster2 == 1'b1)? acc1+1 : acc1;
+			acc3 = (touch_monster3 == 1'b1)? acc2+1 : acc2;
+			nxt_hp = (hp > acc3)? hp - acc3 : 0;
+		end
+	endfunction
 
 endmodule
 

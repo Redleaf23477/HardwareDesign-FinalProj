@@ -18,7 +18,8 @@
 
 // map state
 
-`define MAP_MAP01  3'd0
+`define MAP_MAP0   3'd0
+`define MAP_MAP1   3'd1
 
 // shortest path state
 
@@ -43,7 +44,22 @@ module bellman_ford_shortest_path(
 	input [9:0] query_r1,
 	input [9:0] query_c1,
 	output [2:0] sp_dir1,
-	output [9:0] sp_dist1
+	output [9:0] sp_dist1,
+	
+	input [9:0] query_r2,
+	input [9:0] query_c2,
+	output [2:0] sp_dir2,
+	output [9:0] sp_dist2,
+	
+	input [9:0] query_r3,
+	input [9:0] query_c3,
+	output [2:0] sp_dir3,
+	output [9:0] sp_dist3,
+	
+	input [9:0] query_r4,
+	input [9:0] query_c4,
+	output [2:0] sp_dir4,
+	output [9:0] sp_dist4
 );
 
 	reg [2:0] backtrack [0:9][0:19], nxt_backtrack[0:9][0:19];           // shortest path backtrack
@@ -57,21 +73,36 @@ module bellman_ford_shortest_path(
 	assign sp_dir1 = backtrack[query_r1][query_c1];
 	assign sp_dist1 = shortest_dist[query_r1][query_c1];
 	
+	// 2st query
+	assign sp_dir2 = backtrack[query_r2][query_c2];
+	assign sp_dist2 = shortest_dist[query_r2][query_c2];
+	
+	// 3st query
+	assign sp_dir3 = backtrack[query_r3][query_c3];
+	assign sp_dist3 = shortest_dist[query_r3][query_c3];
+	
+	// 4st query
+	assign sp_dir4 = backtrack[query_r4][query_c4];
+	assign sp_dist4 = shortest_dist[query_r4][query_c4];
+	
 	reg [9:0] prv_player_r, prv_player_c;
+	reg [2:0] prv_map;
 	reg [2:0] stat, nxt_stat;
 	reg [9:0] loop_cnt, nxt_loop_cnt;
 
 	// fsm with state
 	always@(posedge clk, posedge rst) begin
 		if(rst == 1'b1) begin
-			stat <= `STAT_STABLE;
+			stat <= `STAT_INIT;
 			prv_player_r <= player_r;
 			prv_player_c <= player_c;
+			prv_map <= map_stat;
 			loop_cnt <= 0;
 		end else begin
 			stat <= nxt_stat;
 			prv_player_r <= player_r;
 			prv_player_c <= player_c;
+			prv_map <= map_stat;
 			loop_cnt <= nxt_loop_cnt;
 		end
 	end
@@ -80,7 +111,7 @@ module bellman_ford_shortest_path(
 		nxt_loop_cnt = loop_cnt;
 		case(stat)
 			`STAT_STABLE: begin
-				if(prv_player_r != player_r || prv_player_c != player_c) begin
+				if(map_stat == `MAP_MAP0 && (prv_player_r != player_r || prv_player_c != player_c )) begin
 					nxt_stat = `STAT_INIT;
 				end
 			end
@@ -103,24 +134,19 @@ module bellman_ford_shortest_path(
 	end
 	
 	// bellman ford relax
-	always@(posedge clk, posedge rst) begin
-		if(rst == 1'b1) begin
-			init_backtrack_map01;          // task
-			init_shortest_dist_map01;      // task
-		end else begin
-			shift_backtrack;               // task
-			shift_shortest_dist;           // task
-		end
+	always@(posedge clk) begin
+		shift_backtrack;               // task
+		shift_shortest_dist;           // task
 	end
 	always@(*) begin
 		case(stat)
 		`STAT_INIT: begin
-			shift_nxt_backtrack;           // task, backtrack no need to init
-			bf_init_shortest_path;         // task
+			init_backtrack_map0;
+			bf_init_shortest_path;
 		end
 		`STAT_RELAX: begin
-			relax_backtrack_map01;         // task
-			relax_shortest_dist_map01;     // task
+			relax_backtrack_map0;
+			relax_shortest_dist_map0;
 		end
 		default: begin
 			shift_nxt_backtrack;           // task
@@ -131,415 +157,211 @@ module bellman_ford_shortest_path(
 	
 	
 	// tasks
-task init_backtrack_map01;
+task init_backtrack_map0;
 begin
-backtrack[0][0] <= `MOVE_STOP;
-backtrack[0][1] <= `MOVE_STOP;
-backtrack[0][2] <= `MOVE_STOP;
-backtrack[0][3] <= `MOVE_STOP;
-backtrack[0][4] <= `MOVE_STOP;
-backtrack[0][5] <= `MOVE_STOP;
-backtrack[0][6] <= `MOVE_STOP;
-backtrack[0][7] <= `MOVE_STOP;
-backtrack[0][8] <= `MOVE_STOP;
-backtrack[0][9] <= `MOVE_STOP;
-backtrack[0][10] <= `MOVE_STOP;
-backtrack[0][11] <= `MOVE_STOP;
-backtrack[0][12] <= `MOVE_STOP;
-backtrack[0][13] <= `MOVE_STOP;
-backtrack[0][14] <= `MOVE_STOP;
-backtrack[0][15] <= `MOVE_STOP;
-backtrack[0][16] <= `MOVE_STOP;
-backtrack[0][17] <= `MOVE_STOP;
-backtrack[0][18] <= `MOVE_STOP;
-backtrack[0][19] <= `MOVE_STOP;
-backtrack[1][0] <= `MOVE_STOP;
-backtrack[1][1] <= `MOVE_RIGHT;
-backtrack[1][2] <= `MOVE_RIGHT;
-backtrack[1][3] <= `MOVE_DOWN;
-backtrack[1][4] <= `MOVE_STOP;
-backtrack[1][5] <= `MOVE_STOP;
-backtrack[1][6] <= `MOVE_STOP;
-backtrack[1][7] <= `MOVE_DOWN;
-backtrack[1][8] <= `MOVE_STOP;
-backtrack[1][9] <= `MOVE_STOP;
-backtrack[1][10] <= `MOVE_DOWN;
-backtrack[1][11] <= `MOVE_LEFT;
-backtrack[1][12] <= `MOVE_LEFT;
-backtrack[1][13] <= `MOVE_LEFT;
-backtrack[1][14] <= `MOVE_LEFT;
-backtrack[1][15] <= `MOVE_LEFT;
-backtrack[1][16] <= `MOVE_LEFT;
-backtrack[1][17] <= `MOVE_LEFT;
-backtrack[1][18] <= `MOVE_LEFT;
-backtrack[1][19] <= `MOVE_STOP;
-backtrack[2][0] <= `MOVE_STOP;
-backtrack[2][1] <= `MOVE_UP;
-backtrack[2][2] <= `MOVE_STOP;
-backtrack[2][3] <= `MOVE_DOWN;
-backtrack[2][4] <= `MOVE_STOP;
-backtrack[2][5] <= `MOVE_STOP;
-backtrack[2][6] <= `MOVE_STOP;
-backtrack[2][7] <= `MOVE_RIGHT;
-backtrack[2][8] <= `MOVE_DOWN;
-backtrack[2][9] <= `MOVE_LEFT;
-backtrack[2][10] <= `MOVE_LEFT;
-backtrack[2][11] <= `MOVE_STOP;
-backtrack[2][12] <= `MOVE_STOP;
-backtrack[2][13] <= `MOVE_STOP;
-backtrack[2][14] <= `MOVE_UP;
-backtrack[2][15] <= `MOVE_STOP;
-backtrack[2][16] <= `MOVE_STOP;
-backtrack[2][17] <= `MOVE_STOP;
-backtrack[2][18] <= `MOVE_DOWN;
-backtrack[2][19] <= `MOVE_STOP;
-backtrack[3][0] <= `MOVE_STOP;
-backtrack[3][1] <= `MOVE_UP;
-backtrack[3][2] <= `MOVE_STOP;
-backtrack[3][3] <= `MOVE_UP;
-backtrack[3][4] <= `MOVE_LEFT;
-backtrack[3][5] <= `MOVE_LEFT;
-backtrack[3][6] <= `MOVE_LEFT;
-backtrack[3][7] <= `MOVE_STOP;
-backtrack[3][8] <= `MOVE_DOWN;
-backtrack[3][9] <= `MOVE_STOP;
-backtrack[3][10] <= `MOVE_STOP;
-backtrack[3][11] <= `MOVE_STOP;
-backtrack[3][12] <= `MOVE_STOP;
-backtrack[3][13] <= `MOVE_STOP;
-backtrack[3][14] <= `MOVE_STOP;
-backtrack[3][15] <= `MOVE_STOP;
-backtrack[3][16] <= `MOVE_DOWN;
-backtrack[3][17] <= `MOVE_LEFT;
-backtrack[3][18] <= `MOVE_LEFT;
-backtrack[3][19] <= `MOVE_STOP;
-backtrack[4][0] <= `MOVE_STOP;
-backtrack[4][1] <= `MOVE_UP;
-backtrack[4][2] <= `MOVE_STOP;
-backtrack[4][3] <= `MOVE_UP;
-backtrack[4][4] <= `MOVE_STOP;
-backtrack[4][5] <= `MOVE_UP;
-backtrack[4][6] <= `MOVE_STOP;
-backtrack[4][7] <= `MOVE_STOP;
-backtrack[4][8] <= `MOVE_DOWN;
-backtrack[4][9] <= `MOVE_STOP;
-backtrack[4][10] <= `MOVE_STOP;
-backtrack[4][11] <= `MOVE_STOP;
-backtrack[4][12] <= `MOVE_STOP;
-backtrack[4][13] <= `MOVE_DOWN;
-backtrack[4][14] <= `MOVE_LEFT;
-backtrack[4][15] <= `MOVE_LEFT;
-backtrack[4][16] <= `MOVE_LEFT;
-backtrack[4][17] <= `MOVE_STOP;
-backtrack[4][18] <= `MOVE_STOP;
-backtrack[4][19] <= `MOVE_STOP;
-backtrack[5][0] <= `MOVE_STOP;
-backtrack[5][1] <= `MOVE_STOP;
-backtrack[5][2] <= `MOVE_STOP;
-backtrack[5][3] <= `MOVE_STOP;
-backtrack[5][4] <= `MOVE_STOP;
-backtrack[5][5] <= `MOVE_UP;
-backtrack[5][6] <= `MOVE_LEFT;
-backtrack[5][7] <= `MOVE_LEFT;
-backtrack[5][8] <= `MOVE_LEFT;
-backtrack[5][9] <= `MOVE_LEFT;
-backtrack[5][10] <= `MOVE_LEFT;
-backtrack[5][11] <= `MOVE_LEFT;
-backtrack[5][12] <= `MOVE_LEFT;
-backtrack[5][13] <= `MOVE_LEFT;
-backtrack[5][14] <= `MOVE_STOP;
-backtrack[5][15] <= `MOVE_STOP;
-backtrack[5][16] <= `MOVE_UP;
-backtrack[5][17] <= `MOVE_LEFT;
-backtrack[5][18] <= `MOVE_LEFT;
-backtrack[5][19] <= `MOVE_STOP;
-backtrack[6][0] <= `MOVE_STOP;
-backtrack[6][1] <= `MOVE_DOWN;
-backtrack[6][2] <= `MOVE_STOP;
-backtrack[6][3] <= `MOVE_RIGHT;
-backtrack[6][4] <= `MOVE_RIGHT;
-backtrack[6][5] <= `MOVE_UP;
-backtrack[6][6] <= `MOVE_LEFT;
-backtrack[6][7] <= `MOVE_STOP;
-backtrack[6][8] <= `MOVE_UP;
-backtrack[6][9] <= `MOVE_STOP;
-backtrack[6][10] <= `MOVE_STOP;
-backtrack[6][11] <= `MOVE_STOP;
-backtrack[6][12] <= `MOVE_STOP;
-backtrack[6][13] <= `MOVE_UP;
-backtrack[6][14] <= `MOVE_STOP;
-backtrack[6][15] <= `MOVE_STOP;
-backtrack[6][16] <= `MOVE_STOP;
-backtrack[6][17] <= `MOVE_STOP;
-backtrack[6][18] <= `MOVE_UP;
-backtrack[6][19] <= `MOVE_STOP;
-backtrack[7][0] <= `MOVE_STOP;
-backtrack[7][1] <= `MOVE_DOWN;
-backtrack[7][2] <= `MOVE_STOP;
-backtrack[7][3] <= `MOVE_UP;
-backtrack[7][4] <= `MOVE_STOP;
-backtrack[7][5] <= `MOVE_STOP;
-backtrack[7][6] <= `MOVE_UP;
-backtrack[7][7] <= `MOVE_STOP;
-backtrack[7][8] <= `MOVE_UP;
-backtrack[7][9] <= `MOVE_LEFT;
-backtrack[7][10] <= `MOVE_STOP;
-backtrack[7][11] <= `MOVE_STOP;
-backtrack[7][12] <= `MOVE_DOWN;
-backtrack[7][13] <= `MOVE_UP;
-backtrack[7][14] <= `MOVE_LEFT;
-backtrack[7][15] <= `MOVE_LEFT;
-backtrack[7][16] <= `MOVE_LEFT;
-backtrack[7][17] <= `MOVE_STOP;
-backtrack[7][18] <= `MOVE_DOWN;
-backtrack[7][19] <= `MOVE_STOP;
-backtrack[8][0] <= `MOVE_STOP;
-backtrack[8][1] <= `MOVE_RIGHT;
-backtrack[8][2] <= `MOVE_RIGHT;
-backtrack[8][3] <= `MOVE_UP;
-backtrack[8][4] <= `MOVE_STOP;
-backtrack[8][5] <= `MOVE_STOP;
-backtrack[8][6] <= `MOVE_UP;
-backtrack[8][7] <= `MOVE_STOP;
-backtrack[8][8] <= `MOVE_STOP;
-backtrack[8][9] <= `MOVE_UP;
-backtrack[8][10] <= `MOVE_LEFT;
-backtrack[8][11] <= `MOVE_LEFT;
-backtrack[8][12] <= `MOVE_LEFT;
-backtrack[8][13] <= `MOVE_STOP;
-backtrack[8][14] <= `MOVE_STOP;
-backtrack[8][15] <= `MOVE_STOP;
-backtrack[8][16] <= `MOVE_UP;
-backtrack[8][17] <= `MOVE_LEFT;
-backtrack[8][18] <= `MOVE_LEFT;
-backtrack[8][19] <= `MOVE_STOP;
-backtrack[9][0] <= `MOVE_STOP;
-backtrack[9][1] <= `MOVE_STOP;
-backtrack[9][2] <= `MOVE_STOP;
-backtrack[9][3] <= `MOVE_STOP;
-backtrack[9][4] <= `MOVE_STOP;
-backtrack[9][5] <= `MOVE_STOP;
-backtrack[9][6] <= `MOVE_STOP;
-backtrack[9][7] <= `MOVE_STOP;
-backtrack[9][8] <= `MOVE_STOP;
-backtrack[9][9] <= `MOVE_STOP;
-backtrack[9][10] <= `MOVE_STOP;
-backtrack[9][11] <= `MOVE_STOP;
-backtrack[9][12] <= `MOVE_STOP;
-backtrack[9][13] <= `MOVE_STOP;
-backtrack[9][14] <= `MOVE_STOP;
-backtrack[9][15] <= `MOVE_STOP;
-backtrack[9][16] <= `MOVE_STOP;
-backtrack[9][17] <= `MOVE_STOP;
-backtrack[9][18] <= `MOVE_STOP;
-backtrack[9][19] <= `MOVE_STOP;
+nxt_backtrack[0][0] <= `MOVE_STOP;
+nxt_backtrack[0][1] <= `MOVE_STOP;
+nxt_backtrack[0][2] <= `MOVE_STOP;
+nxt_backtrack[0][3] <= `MOVE_STOP;
+nxt_backtrack[0][4] <= `MOVE_STOP;
+nxt_backtrack[0][5] <= `MOVE_STOP;
+nxt_backtrack[0][6] <= `MOVE_STOP;
+nxt_backtrack[0][7] <= `MOVE_STOP;
+nxt_backtrack[0][8] <= `MOVE_STOP;
+nxt_backtrack[0][9] <= `MOVE_STOP;
+nxt_backtrack[0][10] <= `MOVE_STOP;
+nxt_backtrack[0][11] <= `MOVE_STOP;
+nxt_backtrack[0][12] <= `MOVE_STOP;
+nxt_backtrack[0][13] <= `MOVE_STOP;
+nxt_backtrack[0][14] <= `MOVE_STOP;
+nxt_backtrack[0][15] <= `MOVE_STOP;
+nxt_backtrack[0][16] <= `MOVE_STOP;
+nxt_backtrack[0][17] <= `MOVE_STOP;
+nxt_backtrack[0][18] <= `MOVE_STOP;
+nxt_backtrack[0][19] <= `MOVE_STOP;
+nxt_backtrack[1][0] <= `MOVE_STOP;
+nxt_backtrack[1][1] <= `MOVE_RIGHT;
+nxt_backtrack[1][2] <= `MOVE_RIGHT;
+nxt_backtrack[1][3] <= `MOVE_DOWN;
+nxt_backtrack[1][4] <= `MOVE_STOP;
+nxt_backtrack[1][5] <= `MOVE_STOP;
+nxt_backtrack[1][6] <= `MOVE_STOP;
+nxt_backtrack[1][7] <= `MOVE_DOWN;
+nxt_backtrack[1][8] <= `MOVE_STOP;
+nxt_backtrack[1][9] <= `MOVE_STOP;
+nxt_backtrack[1][10] <= `MOVE_DOWN;
+nxt_backtrack[1][11] <= `MOVE_LEFT;
+nxt_backtrack[1][12] <= `MOVE_LEFT;
+nxt_backtrack[1][13] <= `MOVE_LEFT;
+nxt_backtrack[1][14] <= `MOVE_LEFT;
+nxt_backtrack[1][15] <= `MOVE_LEFT;
+nxt_backtrack[1][16] <= `MOVE_LEFT;
+nxt_backtrack[1][17] <= `MOVE_LEFT;
+nxt_backtrack[1][18] <= `MOVE_DOWN;
+nxt_backtrack[1][19] <= `MOVE_STOP;
+nxt_backtrack[2][0] <= `MOVE_STOP;
+nxt_backtrack[2][1] <= `MOVE_UP;
+nxt_backtrack[2][2] <= `MOVE_STOP;
+nxt_backtrack[2][3] <= `MOVE_DOWN;
+nxt_backtrack[2][4] <= `MOVE_STOP;
+nxt_backtrack[2][5] <= `MOVE_STOP;
+nxt_backtrack[2][6] <= `MOVE_STOP;
+nxt_backtrack[2][7] <= `MOVE_RIGHT;
+nxt_backtrack[2][8] <= `MOVE_DOWN;
+nxt_backtrack[2][9] <= `MOVE_LEFT;
+nxt_backtrack[2][10] <= `MOVE_LEFT;
+nxt_backtrack[2][11] <= `MOVE_STOP;
+nxt_backtrack[2][12] <= `MOVE_STOP;
+nxt_backtrack[2][13] <= `MOVE_STOP;
+nxt_backtrack[2][14] <= `MOVE_UP;
+nxt_backtrack[2][15] <= `MOVE_STOP;
+nxt_backtrack[2][16] <= `MOVE_STOP;
+nxt_backtrack[2][17] <= `MOVE_STOP;
+nxt_backtrack[2][18] <= `MOVE_DOWN;
+nxt_backtrack[2][19] <= `MOVE_STOP;
+nxt_backtrack[3][0] <= `MOVE_STOP;
+nxt_backtrack[3][1] <= `MOVE_UP;
+nxt_backtrack[3][2] <= `MOVE_STOP;
+nxt_backtrack[3][3] <= `MOVE_RIGHT;
+nxt_backtrack[3][4] <= `MOVE_LEFT;
+nxt_backtrack[3][5] <= `MOVE_LEFT;
+nxt_backtrack[3][6] <= `MOVE_LEFT;
+nxt_backtrack[3][7] <= `MOVE_STOP;
+nxt_backtrack[3][8] <= `MOVE_DOWN;
+nxt_backtrack[3][9] <= `MOVE_STOP;
+nxt_backtrack[3][10] <= `MOVE_STOP;
+nxt_backtrack[3][11] <= `MOVE_STOP;
+nxt_backtrack[3][12] <= `MOVE_STOP;
+nxt_backtrack[3][13] <= `MOVE_STOP;
+nxt_backtrack[3][14] <= `MOVE_STOP;
+nxt_backtrack[3][15] <= `MOVE_STOP;
+nxt_backtrack[3][16] <= `MOVE_DOWN;
+nxt_backtrack[3][17] <= `MOVE_LEFT;
+nxt_backtrack[3][18] <= `MOVE_LEFT;
+nxt_backtrack[3][19] <= `MOVE_STOP;
+nxt_backtrack[4][0] <= `MOVE_STOP;
+nxt_backtrack[4][1] <= `MOVE_UP;
+nxt_backtrack[4][2] <= `MOVE_STOP;
+nxt_backtrack[4][3] <= `MOVE_UP;
+nxt_backtrack[4][4] <= `MOVE_STOP;
+nxt_backtrack[4][5] <= `MOVE_UP;
+nxt_backtrack[4][6] <= `MOVE_STOP;
+nxt_backtrack[4][7] <= `MOVE_STOP;
+nxt_backtrack[4][8] <= `MOVE_DOWN;
+nxt_backtrack[4][9] <= `MOVE_STOP;
+nxt_backtrack[4][10] <= `MOVE_STOP;
+nxt_backtrack[4][11] <= `MOVE_STOP;
+nxt_backtrack[4][12] <= `MOVE_STOP;
+nxt_backtrack[4][13] <= `MOVE_DOWN;
+nxt_backtrack[4][14] <= `MOVE_LEFT;
+nxt_backtrack[4][15] <= `MOVE_LEFT;
+nxt_backtrack[4][16] <= `MOVE_LEFT;
+nxt_backtrack[4][17] <= `MOVE_STOP;
+nxt_backtrack[4][18] <= `MOVE_STOP;
+nxt_backtrack[4][19] <= `MOVE_STOP;
+nxt_backtrack[5][0] <= `MOVE_STOP;
+nxt_backtrack[5][1] <= `MOVE_STOP;
+nxt_backtrack[5][2] <= `MOVE_STOP;
+nxt_backtrack[5][3] <= `MOVE_STOP;
+nxt_backtrack[5][4] <= `MOVE_STOP;
+nxt_backtrack[5][5] <= `MOVE_UP;
+nxt_backtrack[5][6] <= `MOVE_LEFT;
+nxt_backtrack[5][7] <= `MOVE_LEFT;
+nxt_backtrack[5][8] <= `MOVE_LEFT;
+nxt_backtrack[5][9] <= `MOVE_LEFT;
+nxt_backtrack[5][10] <= `MOVE_LEFT;
+nxt_backtrack[5][11] <= `MOVE_LEFT;
+nxt_backtrack[5][12] <= `MOVE_LEFT;
+nxt_backtrack[5][13] <= `MOVE_LEFT;
+nxt_backtrack[5][14] <= `MOVE_STOP;
+nxt_backtrack[5][15] <= `MOVE_STOP;
+nxt_backtrack[5][16] <= `MOVE_UP;
+nxt_backtrack[5][17] <= `MOVE_LEFT;
+nxt_backtrack[5][18] <= `MOVE_LEFT;
+nxt_backtrack[5][19] <= `MOVE_STOP;
+nxt_backtrack[6][0] <= `MOVE_STOP;
+nxt_backtrack[6][1] <= `MOVE_DOWN;
+nxt_backtrack[6][2] <= `MOVE_STOP;
+nxt_backtrack[6][3] <= `MOVE_RIGHT;
+nxt_backtrack[6][4] <= `MOVE_RIGHT;
+nxt_backtrack[6][5] <= `MOVE_UP;
+nxt_backtrack[6][6] <= `MOVE_UP;
+nxt_backtrack[6][7] <= `MOVE_STOP;
+nxt_backtrack[6][8] <= `MOVE_UP;
+nxt_backtrack[6][9] <= `MOVE_STOP;
+nxt_backtrack[6][10] <= `MOVE_STOP;
+nxt_backtrack[6][11] <= `MOVE_STOP;
+nxt_backtrack[6][12] <= `MOVE_STOP;
+nxt_backtrack[6][13] <= `MOVE_UP;
+nxt_backtrack[6][14] <= `MOVE_STOP;
+nxt_backtrack[6][15] <= `MOVE_STOP;
+nxt_backtrack[6][16] <= `MOVE_STOP;
+nxt_backtrack[6][17] <= `MOVE_STOP;
+nxt_backtrack[6][18] <= `MOVE_UP;
+nxt_backtrack[6][19] <= `MOVE_STOP;
+nxt_backtrack[7][0] <= `MOVE_STOP;
+nxt_backtrack[7][1] <= `MOVE_DOWN;
+nxt_backtrack[7][2] <= `MOVE_STOP;
+nxt_backtrack[7][3] <= `MOVE_UP;
+nxt_backtrack[7][4] <= `MOVE_STOP;
+nxt_backtrack[7][5] <= `MOVE_STOP;
+nxt_backtrack[7][6] <= `MOVE_UP;
+nxt_backtrack[7][7] <= `MOVE_STOP;
+nxt_backtrack[7][8] <= `MOVE_UP;
+nxt_backtrack[7][9] <= `MOVE_LEFT;
+nxt_backtrack[7][10] <= `MOVE_STOP;
+nxt_backtrack[7][11] <= `MOVE_STOP;
+nxt_backtrack[7][12] <= `MOVE_DOWN;
+nxt_backtrack[7][13] <= `MOVE_UP;
+nxt_backtrack[7][14] <= `MOVE_LEFT;
+nxt_backtrack[7][15] <= `MOVE_LEFT;
+nxt_backtrack[7][16] <= `MOVE_LEFT;
+nxt_backtrack[7][17] <= `MOVE_STOP;
+nxt_backtrack[7][18] <= `MOVE_DOWN;
+nxt_backtrack[7][19] <= `MOVE_STOP;
+nxt_backtrack[8][0] <= `MOVE_STOP;
+nxt_backtrack[8][1] <= `MOVE_RIGHT;
+nxt_backtrack[8][2] <= `MOVE_RIGHT;
+nxt_backtrack[8][3] <= `MOVE_UP;
+nxt_backtrack[8][4] <= `MOVE_STOP;
+nxt_backtrack[8][5] <= `MOVE_STOP;
+nxt_backtrack[8][6] <= `MOVE_UP;
+nxt_backtrack[8][7] <= `MOVE_STOP;
+nxt_backtrack[8][8] <= `MOVE_STOP;
+nxt_backtrack[8][9] <= `MOVE_UP;
+nxt_backtrack[8][10] <= `MOVE_LEFT;
+nxt_backtrack[8][11] <= `MOVE_LEFT;
+nxt_backtrack[8][12] <= `MOVE_LEFT;
+nxt_backtrack[8][13] <= `MOVE_STOP;
+nxt_backtrack[8][14] <= `MOVE_STOP;
+nxt_backtrack[8][15] <= `MOVE_STOP;
+nxt_backtrack[8][16] <= `MOVE_UP;
+nxt_backtrack[8][17] <= `MOVE_LEFT;
+nxt_backtrack[8][18] <= `MOVE_LEFT;
+nxt_backtrack[8][19] <= `MOVE_STOP;
+nxt_backtrack[9][0] <= `MOVE_STOP;
+nxt_backtrack[9][1] <= `MOVE_STOP;
+nxt_backtrack[9][2] <= `MOVE_STOP;
+nxt_backtrack[9][3] <= `MOVE_STOP;
+nxt_backtrack[9][4] <= `MOVE_STOP;
+nxt_backtrack[9][5] <= `MOVE_STOP;
+nxt_backtrack[9][6] <= `MOVE_STOP;
+nxt_backtrack[9][7] <= `MOVE_STOP;
+nxt_backtrack[9][8] <= `MOVE_STOP;
+nxt_backtrack[9][9] <= `MOVE_STOP;
+nxt_backtrack[9][10] <= `MOVE_STOP;
+nxt_backtrack[9][11] <= `MOVE_STOP;
+nxt_backtrack[9][12] <= `MOVE_STOP;
+nxt_backtrack[9][13] <= `MOVE_STOP;
+nxt_backtrack[9][14] <= `MOVE_STOP;
+nxt_backtrack[9][15] <= `MOVE_STOP;
+nxt_backtrack[9][16] <= `MOVE_STOP;
+nxt_backtrack[9][17] <= `MOVE_STOP;
+nxt_backtrack[9][18] <= `MOVE_STOP;
+nxt_backtrack[9][19] <= `MOVE_STOP;
 end
 endtask
-task init_shortest_dist_map01;
-begin
-shortest_dist[0][0] <= 1023;
-shortest_dist[0][1] <= 1023;
-shortest_dist[0][2] <= 1023;
-shortest_dist[0][3] <= 1023;
-shortest_dist[0][4] <= 1023;
-shortest_dist[0][5] <= 1023;
-shortest_dist[0][6] <= 1023;
-shortest_dist[0][7] <= 1023;
-shortest_dist[0][8] <= 1023;
-shortest_dist[0][9] <= 1023;
-shortest_dist[0][10] <= 1023;
-shortest_dist[0][11] <= 1023;
-shortest_dist[0][12] <= 1023;
-shortest_dist[0][13] <= 1023;
-shortest_dist[0][14] <= 1023;
-shortest_dist[0][15] <= 1023;
-shortest_dist[0][16] <= 1023;
-shortest_dist[0][17] <= 1023;
-shortest_dist[0][18] <= 1023;
-shortest_dist[0][19] <= 1023;
-shortest_dist[1][0] <= 1023;
-shortest_dist[1][1] <= 4;
-shortest_dist[1][2] <= 3;
-shortest_dist[1][3] <= 2;
-shortest_dist[1][4] <= 1023;
-shortest_dist[1][5] <= 1023;
-shortest_dist[1][6] <= 1023;
-shortest_dist[1][7] <= 12;
-shortest_dist[1][8] <= 1023;
-shortest_dist[1][9] <= 1023;
-shortest_dist[1][10] <= 13;
-shortest_dist[1][11] <= 14;
-shortest_dist[1][12] <= 15;
-shortest_dist[1][13] <= 16;
-shortest_dist[1][14] <= 17;
-shortest_dist[1][15] <= 18;
-shortest_dist[1][16] <= 19;
-shortest_dist[1][17] <= 20;
-shortest_dist[1][18] <= 21;
-shortest_dist[1][19] <= 1023;
-shortest_dist[2][0] <= 1023;
-shortest_dist[2][1] <= 5;
-shortest_dist[2][2] <= 1023;
-shortest_dist[2][3] <= 1;
-shortest_dist[2][4] <= 1023;
-shortest_dist[2][5] <= 1023;
-shortest_dist[2][6] <= 1023;
-shortest_dist[2][7] <= 11;
-shortest_dist[2][8] <= 10;
-shortest_dist[2][9] <= 11;
-shortest_dist[2][10] <= 12;
-shortest_dist[2][11] <= 1023;
-shortest_dist[2][12] <= 1023;
-shortest_dist[2][13] <= 1023;
-shortest_dist[2][14] <= 18;
-shortest_dist[2][15] <= 1023;
-shortest_dist[2][16] <= 1023;
-shortest_dist[2][17] <= 1023;
-shortest_dist[2][18] <= 20;
-shortest_dist[2][19] <= 1023;
-shortest_dist[3][0] <= 1023;
-shortest_dist[3][1] <= 6;
-shortest_dist[3][2] <= 1023;
-shortest_dist[3][3] <= 0;
-shortest_dist[3][4] <= 1;
-shortest_dist[3][5] <= 2;
-shortest_dist[3][6] <= 3;
-shortest_dist[3][7] <= 1023;
-shortest_dist[3][8] <= 9;
-shortest_dist[3][9] <= 1023;
-shortest_dist[3][10] <= 1023;
-shortest_dist[3][11] <= 1023;
-shortest_dist[3][12] <= 1023;
-shortest_dist[3][13] <= 1023;
-shortest_dist[3][14] <= 1023;
-shortest_dist[3][15] <= 1023;
-shortest_dist[3][16] <= 17;
-shortest_dist[3][17] <= 18;
-shortest_dist[3][18] <= 19;
-shortest_dist[3][19] <= 1023;
-shortest_dist[4][0] <= 1023;
-shortest_dist[4][1] <= 7;
-shortest_dist[4][2] <= 1023;
-shortest_dist[4][3] <= 1;
-shortest_dist[4][4] <= 1023;
-shortest_dist[4][5] <= 3;
-shortest_dist[4][6] <= 1023;
-shortest_dist[4][7] <= 1023;
-shortest_dist[4][8] <= 8;
-shortest_dist[4][9] <= 1023;
-shortest_dist[4][10] <= 1023;
-shortest_dist[4][11] <= 1023;
-shortest_dist[4][12] <= 1023;
-shortest_dist[4][13] <= 13;
-shortest_dist[4][14] <= 14;
-shortest_dist[4][15] <= 15;
-shortest_dist[4][16] <= 16;
-shortest_dist[4][17] <= 1023;
-shortest_dist[4][18] <= 1023;
-shortest_dist[4][19] <= 1023;
-shortest_dist[5][0] <= 1023;
-shortest_dist[5][1] <= 1023;
-shortest_dist[5][2] <= 1023;
-shortest_dist[5][3] <= 1023;
-shortest_dist[5][4] <= 1023;
-shortest_dist[5][5] <= 4;
-shortest_dist[5][6] <= 5;
-shortest_dist[5][7] <= 6;
-shortest_dist[5][8] <= 7;
-shortest_dist[5][9] <= 8;
-shortest_dist[5][10] <= 9;
-shortest_dist[5][11] <= 10;
-shortest_dist[5][12] <= 11;
-shortest_dist[5][13] <= 12;
-shortest_dist[5][14] <= 1023;
-shortest_dist[5][15] <= 1023;
-shortest_dist[5][16] <= 17;
-shortest_dist[5][17] <= 18;
-shortest_dist[5][18] <= 19;
-shortest_dist[5][19] <= 1023;
-shortest_dist[6][0] <= 1023;
-shortest_dist[6][1] <= 13;
-shortest_dist[6][2] <= 1023;
-shortest_dist[6][3] <= 7;
-shortest_dist[6][4] <= 6;
-shortest_dist[6][5] <= 5;
-shortest_dist[6][6] <= 6;
-shortest_dist[6][7] <= 1023;
-shortest_dist[6][8] <= 8;
-shortest_dist[6][9] <= 1023;
-shortest_dist[6][10] <= 1023;
-shortest_dist[6][11] <= 1023;
-shortest_dist[6][12] <= 1023;
-shortest_dist[6][13] <= 13;
-shortest_dist[6][14] <= 1023;
-shortest_dist[6][15] <= 1023;
-shortest_dist[6][16] <= 1023;
-shortest_dist[6][17] <= 1023;
-shortest_dist[6][18] <= 20;
-shortest_dist[6][19] <= 1023;
-shortest_dist[7][0] <= 1023;
-shortest_dist[7][1] <= 12;
-shortest_dist[7][2] <= 1023;
-shortest_dist[7][3] <= 8;
-shortest_dist[7][4] <= 1023;
-shortest_dist[7][5] <= 1023;
-shortest_dist[7][6] <= 7;
-shortest_dist[7][7] <= 1023;
-shortest_dist[7][8] <= 9;
-shortest_dist[7][9] <= 10;
-shortest_dist[7][10] <= 1023;
-shortest_dist[7][11] <= 1023;
-shortest_dist[7][12] <= 15;
-shortest_dist[7][13] <= 14;
-shortest_dist[7][14] <= 15;
-shortest_dist[7][15] <= 16;
-shortest_dist[7][16] <= 17;
-shortest_dist[7][17] <= 1023;
-shortest_dist[7][18] <= 21;
-shortest_dist[7][19] <= 1023;
-shortest_dist[8][0] <= 1023;
-shortest_dist[8][1] <= 11;
-shortest_dist[8][2] <= 10;
-shortest_dist[8][3] <= 9;
-shortest_dist[8][4] <= 1023;
-shortest_dist[8][5] <= 1023;
-shortest_dist[8][6] <= 8;
-shortest_dist[8][7] <= 1023;
-shortest_dist[8][8] <= 1023;
-shortest_dist[8][9] <= 11;
-shortest_dist[8][10] <= 12;
-shortest_dist[8][11] <= 13;
-shortest_dist[8][12] <= 14;
-shortest_dist[8][13] <= 1023;
-shortest_dist[8][14] <= 1023;
-shortest_dist[8][15] <= 1023;
-shortest_dist[8][16] <= 18;
-shortest_dist[8][17] <= 19;
-shortest_dist[8][18] <= 20;
-shortest_dist[8][19] <= 1023;
-shortest_dist[9][0] <= 1023;
-shortest_dist[9][1] <= 1023;
-shortest_dist[9][2] <= 1023;
-shortest_dist[9][3] <= 1023;
-shortest_dist[9][4] <= 1023;
-shortest_dist[9][5] <= 1023;
-shortest_dist[9][6] <= 1023;
-shortest_dist[9][7] <= 1023;
-shortest_dist[9][8] <= 1023;
-shortest_dist[9][9] <= 1023;
-shortest_dist[9][10] <= 1023;
-shortest_dist[9][11] <= 1023;
-shortest_dist[9][12] <= 1023;
-shortest_dist[9][13] <= 1023;
-shortest_dist[9][14] <= 1023;
-shortest_dist[9][15] <= 1023;
-shortest_dist[9][16] <= 1023;
-shortest_dist[9][17] <= 1023;
-shortest_dist[9][18] <= 1023;
-shortest_dist[9][19] <= 1023;
-end
-endtask
-task relax_backtrack_map01;
+task relax_backtrack_map0;
 begin
 nxt_backtrack[0][0] <= backtrack[0][0];
 nxt_backtrack[0][1] <= backtrack[0][1];
@@ -743,7 +565,7 @@ nxt_backtrack[9][18] <= backtrack[9][18];
 nxt_backtrack[9][19] <= backtrack[9][19];
 end
 endtask
-task relax_shortest_dist_map01;
+task relax_shortest_dist_map0;
 begin
 nxt_shortest_dist[0][0] <= shortest_dist[0][0];
 nxt_shortest_dist[0][1] <= shortest_dist[0][1];
@@ -947,6 +769,7 @@ nxt_shortest_dist[9][18] <= shortest_dist[9][18];
 nxt_shortest_dist[9][19] <= shortest_dist[9][19];
 end
 endtask
+
 task shift_backtrack;
 begin
 backtrack[0][0] <= nxt_backtrack[0][0];
@@ -1974,33 +1797,33 @@ endtask
 	function [2:0] relax_dir;
 		input [9:0] ur, uc, dr, dc, lr, lc, rr, rc, original_dist;
 		input [2:0] original_dir;
-		reg [9:0] tmp;
-		reg [2:0] dir;
+		reg [9:0] tmp, tmp_u, tmp_d, tmp_l, tmp_r;
+		reg [2:0] dir, dir_u, dir_d, dir_l, dir_r;
 		begin
 			tmp = original_dist;
 			dir = original_dir;
-			tmp = (shortest_dist[ur][uc] < tmp-1)? shortest_dist[ur][uc]+1 : tmp;
-			dir = (shortest_dist[ur][uc] == tmp-1)? `MOVE_UP : dir;
-			tmp = (shortest_dist[dr][dc] < tmp-1)? shortest_dist[dr][dc]+1 : tmp;
-			dir = (shortest_dist[dr][dc] == tmp-1)? `MOVE_DOWN : dir;
-			tmp = (shortest_dist[lr][lc] < tmp-1)? shortest_dist[lr][lc]+1 : tmp;
-			dir = (shortest_dist[lr][lc] == tmp-1)? `MOVE_LEFT : dir;
-			tmp = (shortest_dist[rr][rc] < tmp-1)? shortest_dist[rr][rc]+1 : tmp;
-			dir = (shortest_dist[rr][rc] == tmp-1)? `MOVE_RIGHT : dir;
-			relax_dir = (tmp == 1023)? `MOVE_STOP : dir;
+			tmp_u = (shortest_dist[ur][uc] < tmp-1)? shortest_dist[ur][uc]+1 : tmp;
+			dir_u = (shortest_dist[ur][uc] == tmp_u-1)? `MOVE_UP : dir;
+			tmp_d = (shortest_dist[dr][dc] < tmp_u-1)? shortest_dist[dr][dc]+1 : tmp_u;
+			dir_d = (shortest_dist[dr][dc] == tmp_d-1)? `MOVE_DOWN : dir_u;
+			tmp_l = (shortest_dist[lr][lc] < tmp_d-1)? shortest_dist[lr][lc]+1 : tmp_d;
+			dir_l = (shortest_dist[lr][lc] == tmp_l-1)? `MOVE_LEFT : dir_d;
+			tmp_r = (shortest_dist[rr][rc] < tmp_l-1)? shortest_dist[rr][rc]+1 : tmp_l;
+			dir_r = (shortest_dist[rr][rc] == tmp_r-1)? `MOVE_RIGHT : dir_l;
+			relax_dir = (tmp_r == 1023)? `MOVE_STOP : dir_r;
 		end
 	endfunction
 	
 	function [9:0] relax_dist;
 		input [9:0] ur, uc, dr, dc, lr, lc, rr, rc, original_dist;
-		reg [9:0] tmp;
+		reg [9:0] tmp, tmp_u, tmp_d, tmp_l, tmp_r;
 		begin
 			tmp = original_dist;
-			tmp = (shortest_dist[ur][uc] < tmp-1)? shortest_dist[ur][uc]+1 : tmp;
-			tmp = (shortest_dist[dr][dc] < tmp-1)? shortest_dist[dr][dc]+1 : tmp;
-			tmp = (shortest_dist[lr][lc] < tmp-1)? shortest_dist[lr][lc]+1 : tmp;
-			tmp = (shortest_dist[rr][rc] < tmp-1)? shortest_dist[rr][rc]+1 : tmp;
-			relax_dist = (tmp == 1023)? 1023 : tmp;
+			tmp_u = (shortest_dist[ur][uc] < tmp-1)? shortest_dist[ur][uc]+1 : tmp;
+			tmp_d = (shortest_dist[dr][dc] < tmp_u-1)? shortest_dist[dr][dc]+1 : tmp_u;
+			tmp_l = (shortest_dist[lr][lc] < tmp_d-1)? shortest_dist[lr][lc]+1 : tmp_d;
+			tmp_r = (shortest_dist[rr][rc] < tmp_l-1)? shortest_dist[rr][rc]+1 : tmp_l;
+			relax_dist = tmp_r;
 		end
 	endfunction
 

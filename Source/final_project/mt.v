@@ -8,6 +8,9 @@
 `define MAP_ROAD1   3'b001
 `define MAP_STAIRS  3'b011
 
+`define MAP0_STAIRS_R 2
+`define MAP0_STAIRS_C 14
+
 /////////////////////////////////////////////////////////////////
 // Constants Define
 /////////////////////////////////////////////////////////////////
@@ -15,6 +18,11 @@
 module mt(input clk,
 		  input rst,
 		  input sw_map,
+		  output [2:0] map_idx,
+		  
+		  input [9:0] player_r,
+		  input [9:0] player_c,
+		  
 		  input [5:0] gen_map_x1,
 		  input [5:0] gen_map_y1,
 		  output [2:0] gen_map_return1,
@@ -24,22 +32,52 @@ module mt(input clk,
 		  output [2:0] gen_map_return2
 );
 
+	parameter S0_MAP0 = 3'd0;
+	parameter S1_MAP1 = 3'd1;
+	
 	reg [2:0] mt [0:9] [0:19];
 	
 	assign gen_map_return1 = mt[gen_map_y1][gen_map_x1];
 	assign gen_map_return2 = mt[gen_map_y2][gen_map_x2];
 	
-	parameter S0_RESET = 3'b000;
-	parameter S1_MAP01 = 3'b001;
-	parameter S2_MAP02 = 3'b010;
 	reg [2:0] state, next_state;
+	assign map_idx = state;
+	
 	
 	always @(posedge clk) begin
 		if (rst == 1'b1) begin
-			state = S0_RESET;
+			state = S0_MAP0;
 		end
 		else begin
-			if (next_state == S1_MAP01 && state != S1_MAP01) begin
+			state = next_state;
+			if(next_state == S0_MAP0) begin
+				assign_map0;
+			end else begin
+				assign_map1;
+			end
+		end
+		
+	end
+	
+	always @* begin
+		next_state = state;
+		case (state)
+			S0_MAP0: begin
+				if (player_r == `MAP0_STAIRS_R && player_c == `MAP0_STAIRS_C) begin
+					next_state = S1_MAP1;
+				end
+			end
+			S1_MAP1: begin
+				// doing nothing
+			end
+		endcase
+	end
+	
+
+// task : map assignment
+
+task assign_map0;
+begin
 				mt[0][0] = 3'b010;
 				mt[0][1] = 3'b010;
 				mt[0][2] = 3'b010;
@@ -249,7 +287,11 @@ module mt(input clk,
 				mt[9][17] = 3'b010;
 				mt[9][18] = 3'b010;
 				mt[9][19] = 3'b010;
-			end else if (next_state == S2_MAP02 && state != S2_MAP02) begin
+end
+endtask
+
+task assign_map1;
+begin
 				mt[0][0] = 3'b010;
 				mt[0][1] = 3'b010;
 				mt[0][2] = 3'b010;
@@ -459,44 +501,7 @@ module mt(input clk,
 				mt[9][17] = 3'b010;
 				mt[9][18] = 3'b000;
 				mt[9][19] = 3'b010;
-			end
-			
-			state = next_state;
-		end
-		
-	end
-	
-	always @* begin
-		next_state = S0_RESET;
-		case (state)
-			S0_RESET: begin
-				if (sw_map == 0) begin
-					next_state = S1_MAP01;
-				end else if (sw_map == 1) begin
-					next_state = S2_MAP02;
-				end else begin
-					next_state = S0_RESET;
-				end
-			end
-			S1_MAP01: begin
-				if (sw_map == 0) begin
-					next_state = S1_MAP01;
-				end else if (sw_map == 1) begin
-					next_state = S2_MAP02;
-				end else begin
-					next_state = S0_RESET;
-				end
-			end
-			S2_MAP02: begin
-				if (sw_map == 0) begin
-					next_state = S1_MAP01;
-				end else if (sw_map == 1) begin
-					next_state = S2_MAP02;
-				end else begin
-					next_state = S0_RESET;
-				end
-			end
-		endcase
-	end
+end
+endtask
 	
 endmodule
